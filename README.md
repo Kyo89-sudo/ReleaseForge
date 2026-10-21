@@ -4,7 +4,7 @@
 
 # ReleaseForge
 
-Prima versione pubblica: **0.1.0** (Windows x64).
+Versione: **0.1.2** (Windows x64).
 
 ReleaseForge è un’applicazione Windows per creare torrent e preparare release di film e serie TV. Recupera i metadati da TMDB e genera report MediaInfo, screenshot, grafici del bitrate, link magnet, titoli e post BBCode da template.
 
@@ -21,12 +21,51 @@ ReleaseForge è un’applicazione Windows per creare torrent e preparare release
    - **Installa MediaInfo**: installa **MediaInfo completo** (la versione con interfaccia) con
      `winget install --id MediaArea.MediaInfo.GUI`. Senza winget si apre la pagina ufficiale.
    - Inserisci la chiave **TMDB** (API key v3 o API Read Access Token) e, se vuoi caricare le immagini,
-     l'host per le immagini: **ImgBB** (chiave), **Pixhost**, **Imgur** o **Catbox** (anonimi), oppure
+     l'host per le immagini: **ImgBB** (predefinito e consigliato, chiave API gratuita), **Pixhost**, **Imgur** o **Catbox** (anonimi), oppure
      un sito **Chevereto** qualsiasi (freeimage.host, lensdump, ptscreens, onlyimage… con URL API e chiave),
      più un **host di riserva** usato per le immagini che il primo non riesce a caricare.
 3. Trascina il file o la cartella sulla finestra, controlla tipo release/crew e premi **Genera release** (F5).
 4. A fine lavoro trovi in alto il **Titolo forum** con il pulsante *Copia titolo*, e nella scheda
    **Post generato** il BBCode da copiare. Tutto è salvato anche in `Documenti\ReleaseForge\Output\<nome>_files`.
+
+## Host immagini e chiavi API
+
+**ImgBB è il servizio predefinito e consigliato di ReleaseForge.** L'upload automatico
+richiede una chiave API personale: il servizio gratuito non significa accesso senza chiave.
+
+1. Apri [api.imgbb.com](https://api.imgbb.com/) oppure premi **Ottieni chiave**
+   in **Strumenti → Impostazioni e strumenti**.
+2. Accedi o crea un account ImgBB e ottieni la tua chiave API.
+3. Incollala nel campo **ImgBB — chiave API gratuita** dell'app.
+4. Seleziona **ImgBB (consigliato, chiave API)** come host principale e premi **Salva**.
+5. Nella finestra principale attiva **Carica immagini**.
+
+La chiave ImgBB serve solo per ImgBB ed è distinta dalla chiave TMDB per i metadati.
+Le chiavi vengono salvate nelle impostazioni personali: non condividere `settings.json`.
+
+| Host | Configurazione | Limite nell'app | Miniature |
+|---|---|---|---|
+| **ImgBB — consigliato** | Chiave personale da [api.imgbb.com](https://api.imgbb.com/) | 32 MiB | Anteprima fornita dal servizio |
+| Pixhost | Nessuna chiave o registrazione per l'API pubblica | 10 MiB | Sì |
+| Imgur | L'app usa un Client-ID incorporato; non richiede una chiave all'utente | 10 MiB | Sì |
+| Catbox | Nessuna chiave per upload anonimi | 200 MiB | No: nel post viene usata l'immagine originale |
+| Chevereto | URL API e, se richiesto dal sito, chiave personale | Dipende dal sito | Se restituite dall'API |
+
+I limiti riportati sono quelli applicati dal codice di ReleaseForge. Disponibilità,
+quote e condizioni dei servizi possono cambiare; l'inclusione nell'elenco non implica
+che ogni host sia stato verificato con un upload reale in questa versione.
+
+**Pixhost non richiede una API key**: ReleaseForge usa direttamente la sua
+[API pubblica](https://pixhost.to/api/index.html). È il servizio di riserva predefinito:
+se ImgBB fallisce, l'app prova a caricare l'immagine su Pixhost. Per non usare un
+servizio di riserva seleziona **Nessun upload** nel relativo menu.
+
+Se l'host principale è **Nessun upload**, tutte le immagini restano in locale.
+
+**Imgbox e ImgBB sono servizi diversi.** Imgbox non è ancora integrato.
+Alla verifica del 21 ottobre 2026 la [pagina ufficiale Imgbox](https://imgbox.com/)
+segnala un disservizio del servizio: l'integrazione resta da verificare prima
+che possa essere proposta come alternativa nell'app.
 
 ## Dipendenze esterne
 
@@ -57,9 +96,11 @@ Correzioni rispetto all'originale:
 - per i video con bande laterali rimosse, considera anche l’altezza effettiva. Un file 1792×1080 viene quindi indicato come **1080p**; makerelease, calcolando la risoluzione solo dalla larghezza, lo indicava come **1008p**;
 - `MBAFF`/`PAFF` riconosciuti come interlacciati (`1080i`);
 - lingue duplicate (`ITA ITA AC3 5.1`) unite; tracce senza canali non producono `None.0`;
+- lingua indicata una sola volta per formati associati alle stesse lingue: `ITA EAC3 5.1 ITA AC3 2.0` diventa `ITA EAC3 5.1 AC3 2.0`, mantenendo codec, canali e tag Atmos;
 - sottotitoli senza lingua non fanno più fallire la generazione;
 - se l'anno non è disponibile, omette le parentesi vuote; quando presente, lo include normalmente nel titolo;
-- MP2 (`MPEG Audio Layer 2`), DTS-HD/`DTS XLL`, TrueHD e VC-1 con nomi puliti;
+- DTS-HD Master Audio riconosciuto come **DTS-HD MA**, distinto dal DTS standard anche nel raggruppamento delle lingue; DTS:X mantiene la propria etichetta;
+- MP2 (`MPEG Audio Layer 2`), TrueHD e VC-1 con nomi puliti;
 - 4320p riconosciuto; spazi doppi rimossi.
 Senza MediaInfo il titolo usa i dati di FFmpeg.
 
@@ -74,7 +115,7 @@ Cartella: **Strumenti → Apri cartella configurazione** (`%APPDATA%\ReleaseForg
 - Schede **Tracker** e **Screenshot**: `trackers.txt` (uno per riga; righe vuote e `#` ignorate) e `screenshots.txt` (`HH:MM:SS`).
 - **Liste remote** (scheda Tracker → *Liste remote…*): URL di liste pubbliche (es. ngosang/trackerslist) in
   `tracker_lists.txt`. I tracker scaricati si aggiungono a quelli manuali senza duplicati, con un limite
-  configurabile (30 di default); aggiornamento manuale o automatico prima della release (max 1 volta al giorno),
+  configurabile (8 di default); aggiornamento manuale o automatico prima della release (max 1 volta al giorno),
   cache in `trackers_remote.txt` se la rete non risponde. Mai usate per i torrent privati.
 
 Il motore dei template è compatibile con Jinja2 per ciò che serve ai post (`if/elif/else`, `for`
@@ -83,6 +124,26 @@ con `loop`, `set`, filtri comuni, `is defined`, `trim_blocks`/`lstrip_blocks` co
 Variabili: `TITLE ORIGINAL_TITLE YEAR RUNTIME PLOT GENRE DIRECTOR COUNTRY POSTER_URL TMDB_URL TRAILER
 SCREENSHOTS BITRATE_GRAPH REPORT_MEDIAINFO REPORT_AVINAPTIC SIZE MAGNET TREE EP_COUNT CAST`
 (`person.name`/`person.actor`, `person.character`) più `FORUM_TITLE RELEASE_NAME CREW TMDB_ID MEDIA_TYPE`.
+
+## NewTrackon
+
+La lista [NewTrackon stable](https://newtrackon.com/list) è già attiva nelle
+nuove configurazioni delle liste remote. L'app usa il formato testo
+`https://newtrackon.com/api/stable`, compatibile con il parser dei tracker.
+
+Se aggiorni un'installazione esistente, apri **Tracker → Liste remote…**,
+premi **Aggiungi NewTrackon**, poi **Salva**. Le tue liste personalizzate restano
+invariate; il pulsante non aggiunge due volte lo stesso URL attivo.
+
+La lista stable raccoglie tracker con oltre il 95% di uptime e almeno 10 giorni
+di storico secondo i criteri di NewTrackon. Non comprende tutti i tracker
+monitorati dal servizio e non garantisce che siano raggiungibili dalla tua rete.
+
+Per impostazione predefinita l'app conserva al massimo **8 tracker remoti**,
+nell'ordine restituito dalle fonti. In **Liste remote…** imposta **0** per
+importare tutti i tracker validi delle liste selezionate, senza limite numerico.
+I tracker manuali vengono mantenuti e i duplicati vengono eliminati nell'unione.
+Le liste remote non vengono utilizzate per i torrent privati.
 
 ## Tipi di release
 
@@ -112,7 +173,7 @@ opzione privato, magnet con `dn`, `xl` e `tr`. SHA-1 con BCrypt di Windows.
 - **Visual Studio 2022** con "Sviluppo di applicazioni desktop con C++": doppio clic su `build.bat`
   (CMake di Visual Studio, build x64 Release statica, esegue i test, copia in `dist`).
   In alternativa *File → Apri → Cartella* in Visual Studio e compila il target `ReleaseForge`.
-- **Installer**: `build-installer.bat` (richiede Inno Setup 6.2+), produce `dist\ReleaseForge-0.1.0-win64-setup.exe`.
+- **Installer**: `build-installer.bat` (richiede Inno Setup 6.2+), produce `dist\ReleaseForge-0.1.2-win64-setup.exe`.
 - **Da Linux**: `build-mingw.sh` con llvm-mingw.
 - Test del core (anche su Linux/macOS): `g++ -std=c++17 -Isrc tests/core_tests.cpp src/core/*.cpp -o core_tests && ./core_tests`.
 

@@ -32,7 +32,7 @@ struct Settings {
     bool winMax = false;
     bool toolsPromptShown = false;
     bool trackerListsAuto = true;      // aggiorna le liste remote prima di una release (max 1 volta/giorno)
-    int trackerListsMax = 30;          // massimo tracker presi dalle liste (0 = nessun limite)
+    int trackerListsMax = 8;          // massimo tracker presi dalle liste (0 = nessun limite)
     long long trackerListsLast = 0;    // epoch dell'ultimo aggiornamento riuscito
 
     static Settings Load();

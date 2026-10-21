@@ -3,6 +3,10 @@
 #include <commctrl.h>
 #include <shobjidl.h>
 
+#include <atomic>
+#include <memory>
+#include <thread>
+
 #include "../core/strutil.h"
 #include "../win/mediainfo.h"
 #include "../win/tools.h"
@@ -179,19 +183,24 @@ bool ShowInput(HWND owner, const std::wstring& title, const std::wstring& prompt
 namespace {
 enum {
     IDC_TMDB = 200, IDC_IMGBB, IDC_HOST, IDC_FFMPEG, IDC_FFMPEG_BROWSE, IDC_FFMPEG_STATUS, IDC_FFMPEG_DL,
-    IDC_MI, IDC_MI_BROWSE, IDC_MI_STATUS, IDC_MI_INSTALL, IDC_AVI, IDC_AVI_BROWSE, IDC_PIECE, IDC_SHOWKEYS, IDC_HOST2, IDC_CHEV_URL, IDC_CHEV_KEY
+    IDC_MI, IDC_MI_BROWSE, IDC_MI_STATUS, IDC_MI_INSTALL, IDC_AVI, IDC_AVI_BROWSE, IDC_PIECE, IDC_SHOWKEYS, IDC_HOST2, IDC_CHEV_URL, IDC_CHEV_KEY, IDC_IMGBB_HELP
 };
 const int kPieces[] = {0, 256, 512, 1024, 2048, 4096, 8192, 16384};
 
-void RefreshToolStatus(HWND h) {
-    std::wstring ff = FindFfmpeg(GetDlgText(h, IDC_FFMPEG));
+struct ToolStatusResult {
+    std::wstring ffmpeg;
+    std::wstring mediaInfo;
+};
+
+ToolStatusResult CheckToolStatus(const std::wstring& ffmpegPath, const std::wstring& mediaInfoPath) {
+    std::wstring ff = FindFfmpeg(ffmpegPath);
     std::string ffv = ToolVersion(ff);
     std::wstring ffs = ff.empty() ? L"✖ FFmpeg non trovato: screenshot e grafico bitrate non disponibili."
                                   : L"✔ " + W(ffv.empty() ? "ffmpeg trovato" : ffv.substr(0, 60)) + L"\n" + ff;
     if (!ff.empty() && FindFfprobe(ff).empty()) ffs += L"  (ffprobe mancante)";
-    SetDlgItemTextW(h, IDC_FFMPEG_STATUS, ffs.c_str());
 
-    MediaInfoSetup mis{GetDlgText(h, IDC_MI), ff};
+
+    MediaInfoSetup mis{mediaInfoPath, ff};
     MediaInfoStatus st = DetectMediaInfo(mis);
     std::wstring ms;
     switch (st.backend) {
@@ -200,7 +209,7 @@ void RefreshToolStatus(HWND h) {
         case MediaInfoBackend::Ffmpeg: ms = L"⚠ MediaInfo non trovato: report ridotto con FFmpeg."; break;
         default: ms = L"✖ MediaInfo non trovato."; break;
     }
-    SetDlgItemTextW(h, IDC_MI_STATUS, ms.c_str());
+    return {std::move(ffs), std::move(ms)};
 }
 }  // namespace
 
@@ -210,9 +219,10 @@ bool ShowSettings(HWND owner, Settings& s, int& action) {
     b.Group(L"Chiavi API e host immagini", 7, 5, 336, 122);
     b.Static(-1, L"TheMovieDB \u2014 API key v3 oppure API Read Access Token", 15, 17, 250, 8);
     b.Edit(IDC_TMDB, 15, 27, 320, 13, ES_PASSWORD);
-    b.Static(-1, L"ImgBB \u2014 API key (api.imgbb.com)", 15, 45, 150, 8);
+    b.Static(-1, L"ImgBB \u2014 chiave API gratuita (consigliato)", 15, 45, 250, 8);
     b.Edit(IDC_IMGBB, 15, 55, 155, 13, ES_PASSWORD);
-    b.Check(IDC_SHOWKEYS, L"Mostra chiavi", 178, 57, 80, 10);
+    b.Check(IDC_SHOWKEYS, L"Mostra chiavi", 178, 57, 76, 10);
+    b.Button(IDC_IMGBB_HELP, L"Ottieni chiave", 260, 54, 75, 15);
     b.Static(-1, L"Host immagini", 15, 74, 150, 8);
     b.Combo(IDC_HOST, 15, 83, 155, 100);
     b.Static(-1, L"Host di riserva (se il primo fallisce)", 178, 74, 157, 8);
@@ -242,6 +252,40 @@ bool ShowSettings(HWND owner, Settings& s, int& action) {
     b.Combo(IDC_PIECE, 80, 307, 120, 120);
     b.Button(IDOK, L"Salva", 223, 328, 58, 15, BS_DEFPUSHBUTTON);
     b.Button(IDCANCEL, L"Annulla", 285, 328, 58, 15);
+
+    // The worker owns only input strings and its result. It never touches HWNDs
+    // or Settings, so closing the dialog does not wait for a slow tool probe.
+    struct ToolProbe {
+        std::atomic<bool> done{false};
+        ToolStatusResult result;
+        unsigned generation = 0;
+    };
+    std::shared_ptr<ToolProbe> probe;
+    unsigned generation = 0;
+    constexpr UINT_PTR probeTimer = 1;
+    auto refreshToolStatus = [&](HWND h) {
+        ++generation;
+        SetDlgItemTextW(h, IDC_FFMPEG_STATUS, L"Verifica FFmpeg in corso...");
+        SetDlgItemTextW(h, IDC_MI_STATUS, L"Verifica MediaInfo in corso...");
+        // Debounce path changes and let the dialog paint before probing.
+        SetTimer(h, probeTimer, 100, nullptr);
+    };
+    auto startProbe = [&](HWND h) {
+        auto job = std::make_shared<ToolProbe>();
+        job->generation = generation;
+        std::wstring ff = GetDlgText(h, IDC_FFMPEG);
+        std::wstring mi = GetDlgText(h, IDC_MI);
+        std::thread worker([job, ff = std::move(ff), mi = std::move(mi)] {
+            try {
+                job->result = CheckToolStatus(ff, mi);
+            } catch (...) {
+                job->result = {L"Verifica FFmpeg non riuscita.", L"Verifica MediaInfo non riuscita."};
+            }
+            job->done.store(true, std::memory_order_release);
+        });
+        worker.detach();
+        probe = std::move(job);
+    };
 
     bool saved = false;
     b.Run(owner, [&](HWND h, UINT m, WPARAM w, LPARAM) -> INT_PTR {
@@ -274,11 +318,36 @@ bool ShowSettings(HWND owner, Settings& s, int& action) {
                 }
                 SendMessageW(piece, CB_SETCURSEL, sel, 0);
                 if (!WingetAvailable()) SetDlgItemTextW(h, IDC_MI_INSTALL, L"Scarica…");
-                RefreshToolStatus(h);
+                refreshToolStatus(h);
                 return TRUE;
             }
+            case WM_TIMER:
+                if (w != probeTimer) break;
+                if (probe && !probe->done.load(std::memory_order_acquire)) return TRUE;
+                if (probe && probe->generation == generation) {
+                    SetDlgItemTextW(h, IDC_FFMPEG_STATUS, probe->result.ffmpeg.c_str());
+                    SetDlgItemTextW(h, IDC_MI_STATUS, probe->result.mediaInfo.c_str());
+                    probe.reset();
+                    KillTimer(h, probeTimer);
+                } else {
+                    // Serialize probes, and ignore results for superseded paths.
+                    try { startProbe(h); }
+                    catch (...) {
+                        SetDlgItemTextW(h, IDC_FFMPEG_STATUS, L"Impossibile avviare la verifica.");
+                        SetDlgItemTextW(h, IDC_MI_STATUS, L"Chiudi e riapri le impostazioni per riprovare.");
+                        KillTimer(h, probeTimer);
+                    }
+                }
+                return TRUE;
+            case WM_DESTROY:
+                KillTimer(h, probeTimer);
+                return TRUE;
             case WM_COMMAND: {
                 int id = LOWORD(w);
+                if (id == IDC_IMGBB_HELP) {
+                    OpenUrl(L"https://api.imgbb.com/");
+                    return TRUE;
+                }
                 if (id == IDC_SHOWKEYS) {
                     bool show = IsDlgButtonChecked(h, IDC_SHOWKEYS) == BST_CHECKED;
                     for (int e : {IDC_TMDB, IDC_IMGBB, IDC_CHEV_KEY}) {
@@ -291,7 +360,7 @@ bool ShowSettings(HWND owner, Settings& s, int& action) {
                     std::wstring p;
                     if (PickFile(h, id == IDC_FFMPEG_BROWSE ? L"Seleziona ffmpeg.exe" : L"Seleziona avinaptic2-cli.exe", {{L"Programmi", L"*.exe"}}, p)) {
                         SetDlgItemTextW(h, id == IDC_FFMPEG_BROWSE ? IDC_FFMPEG : IDC_AVI, p.c_str());
-                        RefreshToolStatus(h);
+                        refreshToolStatus(h);
                     }
                     return TRUE;
                 }
@@ -299,11 +368,11 @@ bool ShowSettings(HWND owner, Settings& s, int& action) {
                     std::wstring p;
                     if (PickFile(h, L"Seleziona MediaInfo.dll o MediaInfo.exe (versione completa)", {{L"MediaInfo", L"MediaInfo.dll;MediaInfo.exe"}, {L"DLL e programmi", L"*.dll;*.exe"}}, p)) {
                         SetDlgItemTextW(h, IDC_MI, p.c_str());
-                        RefreshToolStatus(h);
+                        refreshToolStatus(h);
                     }
                     return TRUE;
                 }
-                if ((id == IDC_FFMPEG || id == IDC_MI) && HIWORD(w) == EN_KILLFOCUS) { RefreshToolStatus(h); return TRUE; }
+                if ((id == IDC_FFMPEG || id == IDC_MI) && HIWORD(w) == EN_KILLFOCUS) { refreshToolStatus(h); return TRUE; }
                 if (id == IDC_FFMPEG_DL || id == IDC_MI_INSTALL) {
                     if (id == IDC_MI_INSTALL && !WingetAvailable()) {
                         OpenUrl(L"https://mediaarea.net/it/MediaInfo/Download/Windows");
@@ -344,7 +413,7 @@ bool ShowSettings(HWND owner, Settings& s, int& action) {
 // ------------------------------------------------------------------ Liste tracker
 
 bool ShowTrackerLists(HWND owner, Settings& s) {
-    enum { IDC_URLS = 300, IDC_AUTO, IDC_MAX };
+    enum { IDC_URLS = 300, IDC_AUTO, IDC_MAX, IDC_NEWTRACKON };
     DlgBuilder b(L"Liste di tracker remote", 330, 214);
     b.Static(-1, L"Un URL per riga (file di testo con un tracker per riga). Le righe con # sono disattivate.\n"
                  L"I tracker scaricati si aggiungono a quelli della scheda Tracker, senza duplicati.", 7, 7, 316, 18);
@@ -353,6 +422,7 @@ bool ShowTrackerLists(HWND owner, Settings& s) {
     b.Static(-1, L"Massimo tracker dalle liste (0 = nessun limite):", 7, 171, 170, 8);
     b.Edit(IDC_MAX, 180, 169, 40, 13, ES_NUMBER);
     b.Static(-1, L"Per i torrent privati le liste non vengono mai usate.", 7, 186, 316, 8);
+    b.Button(IDC_NEWTRACKON, L"Aggiungi NewTrackon", 7, 195, 120, 14);
     b.Button(IDOK, L"Salva", 203, 195, 58, 14, BS_DEFPUSHBUTTON);
     b.Button(IDCANCEL, L"Annulla", 265, 195, 58, 14);
     bool saved = false;
@@ -363,6 +433,20 @@ bool ShowTrackerLists(HWND owner, Settings& s) {
             SetDlgItemTextW(h, IDC_URLS, W(ToCrlf(text)).c_str());
             CheckDlgButton(h, IDC_AUTO, s.trackerListsAuto ? BST_CHECKED : BST_UNCHECKED);
             SetDlgItemInt(h, IDC_MAX, UINT(std::max(0, s.trackerListsMax)), FALSE);
+            return TRUE;
+        }
+        if (m == WM_COMMAND && LOWORD(w) == IDC_NEWTRACKON) {
+            const std::string url = "https://newtrackon.com/api/stable";
+            std::string text = U8(GetDlgText(h, IDC_URLS));
+            bool found = false;
+            for (const auto& line : SplitLines(text)) {
+                if (IEquals(Trim(line), url)) { found = true; break; }
+            }
+            if (!found) {
+                if (!text.empty() && text.back() != '\n') text += "\r\n";
+                text += url + "\r\n";
+                SetDlgItemTextW(h, IDC_URLS, W(text).c_str());
+            }
             return TRUE;
         }
         if (m == WM_COMMAND && LOWORD(w) == IDOK) {

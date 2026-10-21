@@ -177,7 +177,7 @@ bool ParseTmdbReference(const std::string& textIn, int& id, std::string& type, s
 
 const std::vector<std::pair<std::string, std::string>>& ImageHosts() {
     static const std::vector<std::pair<std::string, std::string>> hosts = {
-        {"imgbb", "ImgBB (chiave API)"},
+        {"imgbb", "ImgBB (consigliato, chiave API)"},
         {"pixhost", "Pixhost (anonimo)"},
         {"imgur", "Imgur (anonimo)"},
         {"catbox", "Catbox (anonimo, senza miniature)"},

@@ -126,7 +126,19 @@ static std::string AudioFormatTag(const AudioTrack& a) {
         if (a.formatProfile == "Layer 3") fmt = "MP3";
         else if (a.formatProfile == "Layer 2") fmt = "MP2";
     }
-    if (StartsWith(fmt, "DTS")) fmt = "DTS";
+    if (StartsWith(ToUpper(fmt), "DTS")) {
+        const std::string format = ToUpper(fmt);
+        const std::string profile = ToUpper(Trim(a.formatProfile));
+        const std::string commercial = ToUpper(a.commercial);
+        const std::string features = " " + ToUpper(a.features) + " ";
+        const bool masterAudio = format.find("MASTER AUDIO") != std::string::npos ||
+            format.find("DTS-HD MA") != std::string::npos || format.find("DTS HD MA") != std::string::npos ||
+            format.find("XLL") != std::string::npos || commercial.find("MASTER AUDIO") != std::string::npos ||
+            profile == "MA" || StartsWith(profile, "MA /") || profile.find("MASTER AUDIO") != std::string::npos ||
+            profile.find("XLL") != std::string::npos || features.find(" XLL ") != std::string::npos;
+        // Preserve this label before the generic space/hyphen normalization below.
+        return masterAudio ? "DTS-HD MA" : "DTS";
+    }
     if (StartsWith(fmt, "MLP")) fmt = "TrueHD";
     size_t sp = fmt.find(' ');
     if (sp != std::string::npos) fmt = fmt.substr(0, sp);
@@ -202,11 +214,23 @@ std::string BuildReleaseTitle(const std::string& title, const std::string& year,
         if (it == groups.end()) groups.push_back({key, {lang}});
         else if (std::find(it->second.begin(), it->second.end(), lang) == it->second.end()) it->second.push_back(lang);
     }
-    std::vector<std::string> audio;
-    for (auto& g : groups) {
-        std::string s = Join(g.second, " ") + " " + g.first;
-        if (std::find(audio.begin(), audio.end(), s) == audio.end()) audio.push_back(s);
+    // Combine codec groups only when they apply to exactly the same languages.
+    // ITA EAC3 5.1 ITA AC3 2.0 -> ITA EAC3 5.1 AC3 2.0.
+    struct LanguageAudio {
+        std::vector<std::string> languages, key, formats;
+    };
+    std::vector<LanguageAudio> languageGroups;
+    for (const auto& g : groups) {
+        auto key = g.second;
+        std::sort(key.begin(), key.end());
+        auto it = std::find_if(languageGroups.begin(), languageGroups.end(),
+                               [&](const auto& item) { return item.key == key; });
+        if (it == languageGroups.end()) languageGroups.push_back({g.second, std::move(key), {g.first}});
+        else it->formats.push_back(g.first);
     }
+    std::vector<std::string> audio;
+    for (const auto& g : languageGroups)
+        audio.push_back(Join(g.languages, " ") + " " + Join(g.formats, " "));
 
     std::vector<std::string> subs;
     for (auto& t : tracks.text) {
@@ -323,6 +347,7 @@ MediaTracks ParseFfmpegProbe(const std::string& text) {
             AudioTrack a;
             a.language = NormalizeLanguage3(lang);
             a.format = MapFfmpegAudio(codec);
+            if (a.format == "DTS" && rest.find("(DTS-HD MA") != std::string::npos) a.formatProfile = "MA";
             if (rest.find("Atmos") != std::string::npos) a.commercial = "Dolby Atmos";
             if (rest.find("DTS:X") != std::string::npos) a.commercial = "DTS:X";
             std::smatch c;

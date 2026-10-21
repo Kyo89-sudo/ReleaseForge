@@ -1,9 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
 <title>ReleaseForge — video e torrent</title>
 <rect x="8" y="8" width="240" height="240" rx="54" fill="#17232e"/>
+<g transform="translate(5.5 0)">
 <path d="M65 39H151L192 80V205Q192 217 180 217H65Q53 217 53 205V51Q53 39 65 39Z" fill="#f1f6fa"/>
 <path d="M151 39V70Q151 80 161 80H192Z" fill="#8ca6ba"/>
 <path d="M105 77L149 103L105 129Z" fill="#f78336"/>
 <path d="M123 158L88 187M123 158L158 187M88 187H158" fill="none" stroke="#087e8b" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
 <g fill="#087e8b" stroke="#f1f6fa" stroke-width="4"><circle cx="123" cy="156" r="13"/><circle cx="86" cy="188" r="13"/><circle cx="160" cy="188" r="13"/></g>
+</g>
 </svg>

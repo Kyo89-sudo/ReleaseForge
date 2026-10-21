@@ -68,7 +68,7 @@ Settings Settings::Load() {
         s.winMax = Bool(j, "winMax", false);
         s.toolsPromptShown = Bool(j, "toolsPromptShown", false);
         s.trackerListsAuto = Bool(j, "trackerListsAuto", true);
-        s.trackerListsMax = Int(j, "trackerListsMax", 30);
+        s.trackerListsMax = Int(j, "trackerListsMax", 8);
         s.trackerListsLast = j.Has("trackerListsLast") ? (long long)j["trackerListsLast"].Num() : 0;
     } catch (...) {
         // File corrotto: si riparte dai valori predefiniti (il file verrà riscritto al salvataggio).
@@ -116,7 +116,9 @@ bool Settings::Save() const {
 
 std::string DefaultTrackerLists() {
     return "# Liste di tracker da scaricare e unire a trackers.txt (un URL per riga).\n"
-           "# Togli il # davanti a una lista per attivarla. Non vengono usate per i torrent privati.\n"
+           "# NewTrackon stable e attiva. Togli # dalle altre liste per attivarle.\n"
+           "# Non vengono usate per i torrent privati.\n"
+           "https://newtrackon.com/api/stable\n"
            "# https://ngosang.github.io/trackerslist/trackers_best.txt\n"
            "# https://ngosang.github.io/trackerslist/trackers_best_ip.txt\n"
            "# https://raw.githubusercontent.com/XIU2/TrackersListCollection/master/best.txt\n";

@@ -46,9 +46,61 @@ int main(int argc, char** argv) {
     AudioTrack m3 = m2; fx.audio.push_back(m3);
     AudioTrack dt; dt.language = "eng"; dt.format = "DTS XLL"; dt.channelLayout = "C L R Ls Rs LFE"; fx.audio.push_back(dt);
     TextTrack nolang; fx.text.push_back(nolang);
-    CHECK_EQ(BuildReleaseTitle("Film 4:3", "1999", fx, ""), std::string("Film 43 (1999) 1080i H264 ITA MP2 2.0 ENG DTS 5.1"), "fix 4:3, MBAFF, MP2, DTS, lingue doppie");
+    CHECK_EQ(BuildReleaseTitle("Film 4:3", "1999", fx, ""), std::string("Film 43 (1999) 1080i H264 ITA MP2 2.0 ENG DTS-HD MA 5.1"), "fix 4:3, MBAFF, MP2, DTS, lingue doppie");
     VideoTrack v4; v4.width = 3840; v4.height = 1606; v4.format = "HEVC"; MediaTracks uhd; uhd.video.push_back(v4);
     CHECK_EQ(BuildReleaseTitle("X", "2020", uhd, ""), std::string("X (2020) 2160p H265"), "2160p scope");
+
+    // DTS-HD Master Audio: preserve the codec identity and keep DTS core separate.
+    auto audioTitle = [](AudioTrack a) {
+        a.language = "eng"; a.channels = 6; a.channelLayout = "L R C LFE Ls Rs";
+        MediaTracks t; t.audio.push_back(a);
+        return BuildReleaseTitle("X", "2020", t, "");
+    };
+    AudioTrack ma; ma.format = "DTS"; ma.commercial = "DTS-HD Master Audio";
+    CHECK_EQ(audioTitle(ma), std::string("X (2020) ENG DTS-HD MA 5.1"), "DTS-HD MA commercial name");
+    ma.commercial.clear(); ma.formatProfile = "MA / Core";
+    CHECK_EQ(audioTitle(ma), std::string("X (2020) ENG DTS-HD MA 5.1"), "DTS-HD MA legacy profile");
+    ma.formatProfile.clear(); ma.features = "XLL";
+    CHECK_EQ(audioTitle(ma), std::string("X (2020) ENG DTS-HD MA 5.1"), "DTS-HD MA XLL feature");
+    ma.features.clear(); ma.format = "DTS XLL";
+    CHECK_EQ(audioTitle(ma), std::string("X (2020) ENG DTS-HD MA 5.1"), "DTS-HD MA XLL format");
+    ma.format = "DTS-HD MA";
+    CHECK_EQ(audioTitle(ma), std::string("X (2020) ENG DTS-HD MA 5.1"), "DTS-HD MA explicit format");
+    ma.format = "DTS";
+    CHECK_EQ(audioTitle(ma), std::string("X (2020) ENG DTS 5.1"), "DTS core remains DTS");
+    ma.commercial = "DTS-HD High Resolution Audio"; ma.features = "XBR";
+    CHECK_EQ(audioTitle(ma), std::string("X (2020) ENG DTS 5.1"), "DTS HRA is not MA");
+    MediaTracks mixedDts;
+    AudioTrack core; core.format = "DTS"; core.language = "ita"; core.channels = 6; core.channelLayout = "L R C LFE Ls Rs";
+    AudioTrack master = core; master.language = "eng"; master.features = "XLL";
+    mixedDts.audio = {core, master};
+    CHECK_EQ(BuildReleaseTitle("X", "2020", mixedDts, ""),
+             std::string("X (2020) ITA DTS 5.1 ENG DTS-HD MA 5.1"), "DTS core and MA are not grouped");
+    const auto ffma = ParseFfmpegProbe("  Stream #0:1(eng): Audio: dts (DTS-HD MA), 48000 Hz, 5.1(side), s32p (24 bit)\n");
+    CHECK_EQ(BuildReleaseTitle("X", "2020", ffma, ""), std::string("X (2020) ENG DTS-HD MA 5.1"), "DTS-HD MA from FFmpeg");
+    master.features = "XLL X";
+    CHECK_EQ(audioTitle(master), std::string("X (2020) ENG DTS-X 5.1"), "DTS-X keeps priority over MA");
+
+    // Group identical language sets without assigning a codec to the wrong language.
+    MediaTracks languageAudio;
+    AudioTrack itEac; itEac.language = "ita"; itEac.format = "E-AC-3"; itEac.channelLayout = "L R C LFE Ls Rs";
+    AudioTrack itAc = itEac; itAc.format = "AC-3"; itAc.channelLayout = "L R";
+    languageAudio.audio = {itEac, itAc, itAc};
+    CHECK_EQ(BuildReleaseTitle("X", "2020", languageAudio, ""),
+             std::string("X (2020) ITA EAC3 5.1 AC3 2.0"), "same language codecs combined without duplicate tracks");
+    AudioTrack enEac = itEac; enEac.language = "eng";
+    languageAudio.audio = {itEac, enEac, itAc};
+    CHECK_EQ(BuildReleaseTitle("X", "2020", languageAudio, ""),
+             std::string("X (2020) ITA ENG EAC3 5.1 ITA AC3 2.0"), "partially overlapping languages remain separate");
+    AudioTrack enAc = itAc; enAc.language = "eng";
+    languageAudio.audio = {itEac, enEac, enAc, itAc};
+    CHECK_EQ(BuildReleaseTitle("X", "2020", languageAudio, ""),
+             std::string("X (2020) ITA ENG EAC3 5.1 AC3 2.0"), "same language sets combined regardless of track order");
+    AudioTrack itMa = itEac; itMa.format = "DTS"; itMa.features = "XLL";
+    AudioTrack itDts = itMa; itDts.features.clear();
+    languageAudio.audio = {itMa, itDts};
+    CHECK_EQ(BuildReleaseTitle("X", "2020", languageAudio, ""),
+             std::string("X (2020) ITA DTS-HD MA 5.1 DTS 5.1"), "same language keeps both DTS codec identities");
 
     // --- HDR / Dolby Vision / Atmos
     MediaTracks hdr;
@@ -58,7 +110,7 @@ int main(int argc, char** argv) {
     AudioTrack ea; ea.language = "eng"; ea.format = "E-AC-3"; ea.features = "JOC"; ea.commercial = "Dolby Digital Plus with Dolby Atmos"; ea.channelLayout = "L R C LFE Ls Rs"; hdr.audio.push_back(ea);
     AudioTrack ia; ia.language = "ita"; ia.format = "E-AC-3"; ia.channelLayout = "L R C LFE Ls Rs"; hdr.audio.push_back(ia);
     AudioTrack th; th.language = "eng"; th.format = "MLP FBA"; th.features = "16-ch"; th.commercial = "Dolby TrueHD with Dolby Atmos"; th.channelLayout = "L R C LFE Ls Rs Lb Rb"; hdr.audio.push_back(th);
-    CHECK_EQ(BuildReleaseTitle("Dune", "2021", hdr, ""), std::string("Dune (2021) 2160p H265 DV HDR10 ENG EAC3 5.1 Atmos ITA EAC3 5.1 ENG TrueHD 7.1 Atmos"), "DV HDR10 + Atmos");
+    CHECK_EQ(BuildReleaseTitle("Dune", "2021", hdr, ""), std::string("Dune (2021) 2160p H265 DV HDR10 ENG EAC3 5.1 Atmos TrueHD 7.1 Atmos ITA EAC3 5.1"), "DV HDR10 + Atmos");
     VideoTrack p10; p10.hdrFormat = "SMPTE ST 2094 App 4, Version 1, HDR10+ Profile B compatible"; CHECK_EQ(HdrTag(p10), std::string("HDR10+"), "HDR10+");
     VideoTrack p5; p5.hdrFormat = "Dolby Vision, Version 1.0, Profile 5, dvhe.05.06, BL+RPU / "; p5.transfer = "PQ";
     CHECK_EQ(HdrTag(p5), std::string("DV"), "DV profilo 5 senza HDR10");

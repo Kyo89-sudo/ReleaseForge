@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.1.2] - 2026-10-21
+
+### Added
+
+- Fonte NewTrackon stable preconfigurata e attiva per le nuove configurazioni.
+- Pulsante Aggiungi NewTrackon in Liste remote per aggiungere la fonte alle
+  configurazioni esistenti senza duplicare URL attivi o sovrascrivere le altre liste.
+- Pulsante Ottieni chiave nelle impostazioni per aprire la pagina API di ImgBB.
+
+### Changed
+
+- Centrata la pagina nell’icona rispetto al quadrato arrotondato,
+  aggiornando SVG e ICO multirisoluzione.
+- Accorpati nel titolo i formati audio associati allo stesso insieme di lingue,
+  evitando ripetizioni come ITA EAC3 5.1 ITA AC3 2.0 e mantenendo distinti
+  codec, canali, Atmos e gruppi con lingue solo parzialmente coincidenti.
+- Ridotto da 30 a 8 il limite predefinito dei tracker remoti. Il limite resta
+  configurabile; 0 disabilita il limite. I tracker manuali restano aggiuntivi
+  e i valori già salvati nelle impostazioni vengono mantenuti.
+- Etichettato ImgBB, già host predefinito, come servizio consigliato.
+- Documentati chiave API ImgBB, distinzione dalla chiave TMDB, accesso a Pixhost
+  senza chiave, host di riserva e limiti applicati agli upload.
+- Documentati criteri della lista NewTrackon stable e configurazione delle fonti.
+
+### Fixed
+
+- Conservata l’identità DTS-HD Master Audio nel titolo con etichetta DTS-HD MA,
+  usando formato, profilo e metadati MediaInfo o il profilo FFmpeg.
+- Mantenute distinte le etichette di DTS standard e DTS-HD MA anche quando
+  i canali coincidono; mantenuta la precedenza del riconoscimento DTS:X.
+- Eseguito in background il rilevamento di FFmpeg e MediaInfo nelle impostazioni:
+  l'apertura del dialogo non attende più le verifiche sul thread dell'interfaccia.
+- Aggiunto lo stato Verifica in corso durante il rilevamento degli strumenti.
+- Serializzate le verifiche successive e scartati i risultati di percorsi non più
+  attuali; la chiusura del dialogo non attende il completamento del worker.
+- Conservati disposizione e controlli della finestra Impostazioni e strumenti.
+
 ## [0.1.0] - 2026-10-21
 
 Prima release pubblica.

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(ReleaseForge VERSION 0.1.0 LANGUAGES CXX RC)
+project(ReleaseForge VERSION 0.1.2 LANGUAGES CXX RC)
 
 # App Win32 nativa (C++17). Nessuna dipendenza esterna: WinHTTP, BCrypt, GDI+, Common Controls.
 set(CMAKE_CXX_STANDARD 17)

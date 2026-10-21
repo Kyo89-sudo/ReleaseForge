@@ -2,7 +2,7 @@
 ; L'app è un unico eseguibile Win32 nativo: nessun runtime .NET / Windows App SDK / VC++.
 ; FFmpeg si scarica dall'app (verifica SHA-256); MediaInfo completo si installa con winget.
 #ifndef AppVersion
-  #define AppVersion "0.1.0"
+  #define AppVersion "0.1.2"
 #endif
 #ifndef ExeDir
   #define ExeDir "..\dist"
