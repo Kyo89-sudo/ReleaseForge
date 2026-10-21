@@ -90,8 +90,8 @@ Format_AdditionalFeatures) o, in ripiego, da FFmpeg.
 Correzioni rispetto all'originale:
 - per i video con bande laterali rimosse, considera anche l’altezza effettiva. Un file 1792×1080 viene quindi indicato come **1080p**; makerelease, calcolando la risoluzione solo dalla larghezza, lo indicava come **1008p**;
 - `MBAFF`/`PAFF` riconosciuti come interlacciati (`1080i`);
-- lingue duplicate (`ITA ITA AC3 5.1`) unite; tracce senza canali non producono `None.0`;
-- lingua indicata una sola volta per formati associati alle stesse lingue: `ITA EAC3 5.1 ITA AC3 2.0` diventa `ITA EAC3 5.1 AC3 2.0`, mantenendo codec, canali e tag Atmos;
+- raggruppa le tracce audio evitando ripetizioni delle lingue, anche tra formati diversi, e mantiene distinti codec e canali;
+- se non sono disponibili né la disposizione né il numero dei canali, omette il dato dal titolo;
 - sottotitoli senza lingua non fanno più fallire la generazione;
 - se l'anno non è disponibile, omette le parentesi vuote; quando presente, lo include normalmente nel titolo;
 - DTS-HD Master Audio riconosciuto come **DTS-HD MA**, distinto dal DTS standard anche nel raggruppamento delle lingue; DTS:X mantiene la propria etichetta;
