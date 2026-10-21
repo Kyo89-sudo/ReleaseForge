@@ -9,8 +9,9 @@ Prima versione pubblica: **0.1.0** (Windows x64).
 ReleaseForge prepara una release completa partendo da un file video o da una cartella:
 metadati TheMovieDB, report MediaInfo, screenshot, file `.torrent` + magnet, grafico del bitrate,
 **titolo della release per il forum** e post BBCode generati da template.
-Il flusso, il template standard e il formato del titolo sono quelli di
-[makerelease](https://github.com/c137ricksanchez/makerelease) (MIT).
+ReleaseForge è una riscrittura in C++ di
+[makerelease](https://github.com/c137ricksanchez/makerelease) (MIT), da cui riprende
+il template standard e le regole per comporre il titolo della release.
 
 L'app è un unico `ReleaseForge.exe` **Win32 nativo (C++)**: niente .NET, niente WinUI 3 /
 Windows App SDK, niente VC++ Redistributable. Funziona su Windows 10 1809+ e Windows 11 (x64).
