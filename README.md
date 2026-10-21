@@ -6,15 +6,11 @@
 
 Prima versione pubblica: **0.1.0** (Windows x64).
 
-ReleaseForge prepara una release completa partendo da un file video o da una cartella:
-metadati TheMovieDB, report MediaInfo, screenshot, file `.torrent` + magnet, grafico del bitrate,
-**titolo della release per il forum** e post BBCode generati da template.
-ReleaseForge è una riscrittura in C++ di
-[makerelease](https://github.com/c137ricksanchez/makerelease) (MIT), da cui riprende
-il template standard e le regole per comporre il titolo della release.
+ReleaseForge è un’applicazione Windows per creare torrent e preparare release di film e serie TV. Recupera i metadati da TMDB e genera report MediaInfo, screenshot, grafici del bitrate, link magnet, titoli e post BBCode da template.
 
-L'app è un unico `ReleaseForge.exe` **Win32 nativo (C++)**: niente .NET, niente WinUI 3 /
-Windows App SDK, niente VC++ Redistributable. Funziona su Windows 10 1809+ e Windows 11 (x64).
+È una riscrittura in C++ di [makerelease](https://github.com/c137ricksanchez/makerelease) (MIT), da cui riprende il template standard e le regole di composizione del titolo.
+
+È distribuita come unico eseguibile e funziona su Windows 10 1809+ e Windows 11 x64, senza runtime aggiuntivi.
 
 ## Uso rapido
 
