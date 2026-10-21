@@ -1,7 +1,7 @@
 #pragma once
-#define RF_VERSION_STR "0.1.2"
-#define RF_VERSION_W L"0.1.2"
-#define RF_VERSION_NUM 0, 1, 2, 0
+#define RF_VERSION_STR "0.1.3"
+#define RF_VERSION_W L"0.1.3"
+#define RF_VERSION_NUM 0, 1, 3, 0
 
 #define IDI_APP 1
 #define IDR_DEFAULT_TEMPLATE 101

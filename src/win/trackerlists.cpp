@@ -64,7 +64,8 @@ std::vector<std::string> UpdateRemoteTrackers(int maxCount, const std::atomic<bo
     if (maxCount > 0 && int(merged.size()) > maxCount) merged.resize(size_t(maxCount));
     std::string text = "# Generato da ReleaseForge dalle liste in tracker_lists.txt - non modificare a mano\n";
     for (auto& t : merged) text += t + "\n";
-    WriteConfigFile(L"trackers_remote.txt", text);
+    if (!WriteConfigFile(L"trackers_remote.txt", text))
+        throw std::runtime_error("impossibile salvare trackers_remote.txt: aggiornamento non completato");
     return merged;
 }
 

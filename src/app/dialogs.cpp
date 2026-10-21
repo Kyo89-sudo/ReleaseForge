@@ -413,45 +413,32 @@ bool ShowSettings(HWND owner, Settings& s, int& action) {
 // ------------------------------------------------------------------ Liste tracker
 
 bool ShowTrackerLists(HWND owner, Settings& s) {
-    enum { IDC_URLS = 300, IDC_AUTO, IDC_MAX, IDC_NEWTRACKON };
-    DlgBuilder b(L"Liste di tracker remote", 330, 214);
-    b.Static(-1, L"Un URL per riga (file di testo con un tracker per riga). Le righe con # sono disattivate.\n"
-                 L"I tracker scaricati si aggiungono a quelli della scheda Tracker, senza duplicati.", 7, 7, 316, 18);
-    b.Edit(IDC_URLS, 7, 28, 316, 120, ES_MULTILINE | ES_WANTRETURN | ES_AUTOVSCROLL | WS_VSCROLL);
-    b.Check(IDC_AUTO, L"Aggiorna automaticamente prima di una release (al massimo una volta al giorno)", 7, 154, 316, 10);
-    b.Static(-1, L"Massimo tracker dalle liste (0 = nessun limite):", 7, 171, 170, 8);
-    b.Edit(IDC_MAX, 180, 169, 40, 13, ES_NUMBER);
-    b.Static(-1, L"Per i torrent privati le liste non vengono mai usate.", 7, 186, 316, 8);
-    b.Button(IDC_NEWTRACKON, L"Aggiungi NewTrackon", 7, 195, 120, 14);
-    b.Button(IDOK, L"Salva", 203, 195, 58, 14, BS_DEFPUSHBUTTON);
-    b.Button(IDCANCEL, L"Annulla", 265, 195, 58, 14);
+    enum { IDC_URLS = 300, IDC_MAX };
+    DlgBuilder b(L"Fonti delle liste tracker", 330, 258);
+    b.Static(-1, L"ATTENZIONE: le righe con # sono disattivate. Togli # davanti all’URL per attivare una fonte.\n"
+                 L"Usa URL di liste in formato testo, con un tracker per riga.", 7, 7, 316, 30);
+    b.Edit(IDC_URLS, 7, 42, 316, 120, ES_MULTILINE | ES_WANTRETURN | ES_AUTOVSCROLL | WS_VSCROLL);
+    b.Static(-1, L"Aggiorna dalle liste unisce i tracker all’elenco visibile senza duplicati. Non ci sono aggiunte automatiche.",
+             7, 168, 316, 22);
+    b.Static(-1, L"Massimo tracker per importazione (0 = tutti):", 7, 195, 170, 8);
+    b.Edit(IDC_MAX, 180, 193, 40, 13, ES_NUMBER);
+    b.Static(-1, L"Attenzione: togliere una fonte non elimina i tracker già importati. Rimuovili dall’elenco o premi Ripristina predefiniti.",
+             7, 212, 316, 22);
+    b.Button(IDOK, L"Salva", 203, 239, 58, 14, BS_DEFPUSHBUTTON);
+    b.Button(IDCANCEL, L"Annulla", 265, 239, 58, 14);
     bool saved = false;
     b.Run(owner, [&](HWND h, UINT m, WPARAM w, LPARAM) -> INT_PTR {
         if (m == WM_INITDIALOG) {
             std::string text = ReadConfigFile(L"tracker_lists.txt");
             if (text.empty()) text = DefaultTrackerLists();
             SetDlgItemTextW(h, IDC_URLS, W(ToCrlf(text)).c_str());
-            CheckDlgButton(h, IDC_AUTO, s.trackerListsAuto ? BST_CHECKED : BST_UNCHECKED);
+
             SetDlgItemInt(h, IDC_MAX, UINT(std::max(0, s.trackerListsMax)), FALSE);
-            return TRUE;
-        }
-        if (m == WM_COMMAND && LOWORD(w) == IDC_NEWTRACKON) {
-            const std::string url = "https://newtrackon.com/api/stable";
-            std::string text = U8(GetDlgText(h, IDC_URLS));
-            bool found = false;
-            for (const auto& line : SplitLines(text)) {
-                if (IEquals(Trim(line), url)) { found = true; break; }
-            }
-            if (!found) {
-                if (!text.empty() && text.back() != '\n') text += "\r\n";
-                text += url + "\r\n";
-                SetDlgItemTextW(h, IDC_URLS, W(text).c_str());
-            }
             return TRUE;
         }
         if (m == WM_COMMAND && LOWORD(w) == IDOK) {
             WriteConfigFile(L"tracker_lists.txt", U8(GetDlgText(h, IDC_URLS)));
-            s.trackerListsAuto = IsDlgButtonChecked(h, IDC_AUTO) == BST_CHECKED;
+            s.trackerListsAuto = false;
             s.trackerListsMax = int(GetDlgItemInt(h, IDC_MAX, nullptr, FALSE));
             s.trackerListsLast = 0;  // forza l'aggiornamento con le nuove liste
             saved = true;

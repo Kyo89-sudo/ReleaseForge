@@ -67,7 +67,7 @@ Settings Settings::Load() {
         s.winH = Int(j, "winH", 0);
         s.winMax = Bool(j, "winMax", false);
         s.toolsPromptShown = Bool(j, "toolsPromptShown", false);
-        s.trackerListsAuto = Bool(j, "trackerListsAuto", true);
+        s.trackerListsAuto = false;
         s.trackerListsMax = Int(j, "trackerListsMax", 8);
         s.trackerListsLast = j.Has("trackerListsLast") ? (long long)j["trackerListsLast"].Num() : 0;
     } catch (...) {
@@ -115,10 +115,10 @@ bool Settings::Save() const {
 }
 
 std::string DefaultTrackerLists() {
-    return "# Liste di tracker da scaricare e unire a trackers.txt (un URL per riga).\n"
-           "# NewTrackon stable e attiva. Togli # dalle altre liste per attivarle.\n"
-           "# Non vengono usate per i torrent privati.\n"
-           "https://newtrackon.com/api/stable\n"
+    return "# Fonti per importare tracker nell’elenco visibile (un URL per riga).\n"
+           "# Le righe con # sono disattivate: togli # davanti all’URL per attivare la fonte.\n"
+           "# NewTrackon stable: tracker con uptime >95% e almeno 10 giorni di storico.\n"
+           "# https://newtrackon.com/api/stable\n"
            "# https://ngosang.github.io/trackerslist/trackers_best.txt\n"
            "# https://ngosang.github.io/trackerslist/trackers_best_ip.txt\n"
            "# https://raw.githubusercontent.com/XIU2/TrackersListCollection/master/best.txt\n";
@@ -154,6 +154,17 @@ void EnsureConfig() {
     ensure(L"screenshots.txt", DefaultFile::Screenshots);
     std::wstring lists = PathJoin(dir, L"tracker_lists.txt");
     if (!FileExists(lists)) WriteFileBytes(lists, DefaultTrackerLists());
+    else {
+        // Add the new example to existing configurations without enabling it.
+        std::string text;
+        if (ReadFileBytes(lists, text) &&
+            ToLower(text).find("https://newtrackon.com/api/stable") == std::string::npos) {
+            if (!text.empty() && text.back() != '\n') text += "\n";
+            text += "# NewTrackon stable: tracker con uptime >95% e almeno 10 giorni di storico.\n"
+                    "# https://newtrackon.com/api/stable\n";
+            WriteFileBytes(lists, text);
+        }
+    }
     // Esempio dello stile classico: fuori dal ciclo multi-template (non inizia con "template").
     std::wstring examples = PathJoin(dir, L"esempi");
     CreateDirs(examples);

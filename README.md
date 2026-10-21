@@ -4,7 +4,7 @@
 
 # ReleaseForge
 
-Versione: **0.1.2** (Windows x64).
+Versione: **0.1.3** (Windows x64).
 
 ReleaseForge è un’applicazione Windows per creare torrent e preparare release di film e serie TV. Recupera i metadati da TMDB e genera report MediaInfo, screenshot, grafici del bitrate, link magnet, titoli e post BBCode da template.
 
@@ -108,10 +108,11 @@ Cartella: **Strumenti → Apri cartella configurazione** (`%APPDATA%\ReleaseForg
 - Scheda **Template**: modifica, salva (con controllo sintassi e numero di riga), crea, elimina,
   ripristina lo standard. In `config\esempi` c'è anche un template in stile "classico".
 - Schede **Tracker** e **Screenshot**: `trackers.txt` (uno per riga; righe vuote e `#` ignorate) e `screenshots.txt` (`HH:MM:SS`).
-- **Liste remote** (scheda Tracker → *Liste remote…*): URL di liste pubbliche (es. ngosang/trackerslist) in
-  `tracker_lists.txt`. I tracker scaricati si aggiungono a quelli manuali senza duplicati, con un limite
-  configurabile (8 di default); aggiornamento manuale o automatico prima della release (max 1 volta al giorno),
-  cache in `trackers_remote.txt` se la rete non risponde. Mai usate per i torrent privati.
+- **Liste remote** (scheda Tracker → *Liste remote…*): configura gli URL delle fonti
+  in `tracker_lists.txt`. Le righe con `#` sono disattivate: togli `#` davanti all’URL,
+  salva e premi **Aggiorna dalle liste** per importare i tracker nell’elenco visibile.
+  Non vengono aggiunti tracker automaticamente all’avvio della release.
+
 
 Il motore dei template è compatibile con Jinja2 per ciò che serve ai post (`if/elif/else`, `for`
 con `loop`, `set`, filtri comuni, `is defined`, `trim_blocks`/`lstrip_blocks` come makerelease).
@@ -120,25 +121,36 @@ Variabili: `TITLE ORIGINAL_TITLE YEAR RUNTIME PLOT GENRE DIRECTOR COUNTRY POSTER
 SCREENSHOTS BITRATE_GRAPH REPORT_MEDIAINFO REPORT_AVINAPTIC SIZE MAGNET TREE EP_COUNT CAST`
 (`person.name`/`person.actor`, `person.character`) più `FORUM_TITLE RELEASE_NAME CREW TMDB_ID MEDIA_TYPE`.
 
-## NewTrackon
+## Elenco tracker e ripristino
 
-La lista [NewTrackon stable](https://newtrackon.com/list) è già attiva nelle
-nuove configurazioni delle liste remote. L'app usa il formato testo
-`https://newtrackon.com/api/stable`, compatibile con il parser dei tracker.
+La scheda **Tracker** contiene un solo elenco modificabile: è quello usato per
+creare il torrent. Puoi inserire tracker manualmente oppure importarli dalle
+fonti con **Aggiorna dalle liste**. Il comando unisce i risultati all’elenco
+visibile, elimina i duplicati e salva la lista risultante.
 
-Se aggiorni un'installazione esistente, apri **Tracker → Liste remote…**,
-premi **Aggiungi NewTrackon**, poi **Salva**. Le tue liste personalizzate restano
-invariate; il pulsante non aggiunge due volte lo stesso URL attivo.
+Le fonti sono esempi commentati nelle nuove configurazioni. Per usare
+[NewTrackon stable](https://newtrackon.com/list), apri **Liste remote…**, togli
+`#` davanti a `https://newtrackon.com/api/stable` e salva. Non serve una chiave API.
+Se l’esempio NewTrackon manca in una configurazione esistente, viene aggiunto
+come commento al successivo avvio; le altre fonti restano invariate.
+La lista stable seleziona tracker con oltre il 95% di uptime e almeno 10 giorni
+di storico; la raggiungibilità dalla tua rete può variare.
 
-La lista stable raccoglie tracker con oltre il 95% di uptime e almeno 10 giorni
-di storico secondo i criteri di NewTrackon. Non comprende tutti i tracker
-monitorati dal servizio e non garantisce che siano raggiungibili dalla tua rete.
+Il limite predefinito è **8 tracker scaricati per importazione**. Imposta **0**
+per scaricare tutti i tracker validi delle fonti attive. Il limite riguarda
+l’importazione, non il totale dell’elenco dopo l’unione.
 
-Per impostazione predefinita l'app conserva al massimo **8 tracker remoti**,
-nell'ordine restituito dalle fonti. In **Liste remote…** imposta **0** per
-importare tutti i tracker validi delle liste selezionate, senza limite numerico.
-I tracker manuali vengono mantenuti e i duplicati vengono eliminati nell'unione.
-Le liste remote non vengono utilizzate per i torrent privati.
+**Attenzione:** togliere o disattivare una fonte non elimina i tracker già importati.
+Restano nell’elenco e saranno usati finché non li cancelli o ripristini i predefiniti.
+Se il download fallisce, l’elenco visibile rimane invariato; la cache non viene
+unita di nascosto al torrent.
+
+**Ripristina predefiniti** salva la lista iniziale, svuota la cache delle importazioni
+e disattiva le fonti, conservando i loro URL come righe commentate.
+
+Per i torrent privati l’importazione dalle fonti pubbliche è disabilitata.
+Prima di crearne uno, inserisci nell’elenco soltanto i tracker previsti dal sito:
+i tracker già visibili non vengono filtrati automaticamente.
 
 ## Tipi di release
 
@@ -168,7 +180,7 @@ opzione privato, magnet con `dn`, `xl` e `tr`. SHA-1 con BCrypt di Windows.
 - **Visual Studio 2022** con "Sviluppo di applicazioni desktop con C++": doppio clic su `build.bat`
   (CMake di Visual Studio, build x64 Release statica, esegue i test, copia in `dist`).
   In alternativa *File → Apri → Cartella* in Visual Studio e compila il target `ReleaseForge`.
-- **Installer**: `build-installer.bat` (richiede Inno Setup 6.2+), produce `dist\ReleaseForge-0.1.2-win64-setup.exe`.
+- **Installer**: `build-installer.bat` (richiede Inno Setup 6.2+), produce `dist\ReleaseForge-0.1.3-win64-setup.exe`.
 - **Da Linux**: `build-mingw.sh` con llvm-mingw.
 - Test del core (anche su Linux/macOS): `g++ -std=c++17 -Isrc tests/core_tests.cpp src/core/*.cpp -o core_tests && ./core_tests`.
 

@@ -2,7 +2,7 @@
 ; L'app è un unico eseguibile Win32 nativo: nessun runtime .NET / Windows App SDK / VC++.
 ; FFmpeg si scarica dall'app (verifica SHA-256); MediaInfo completo si installa con winget.
 #ifndef AppVersion
-  #define AppVersion "0.1.2"
+  #define AppVersion "0.1.3"
 #endif
 #ifndef ExeDir
   #define ExeDir "..\dist"
@@ -12,6 +12,7 @@
 AppId={{D435F294-B487-42C4-AD02-C1B837976034}
 AppName=ReleaseForge
 AppVersion={#AppVersion}
+VersionInfoVersion=0.1.3.0
 AppPublisher=Kyos
 AppPublisherURL=https://github.com/Kyo89-sudo
 DefaultDirName={localappdata}\Programs\ReleaseForge
@@ -22,7 +23,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0.17763
 OutputDir=..\dist
-OutputBaseFilename=ReleaseForge-{#AppVersion}-win64-setup
+OutputBaseFilename=ReleaseForge-0.1.3-win64-setup
 SetupIconFile=..\src\ReleaseForge.ico
 UninstallDisplayIcon={app}\ReleaseForge.exe
 WizardStyle=modern

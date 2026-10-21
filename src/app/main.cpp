@@ -160,6 +160,8 @@ void UpdateRunState() {
     bool r = g.running;
     EnableWindow(C(IDC_RUN), !r);
     EnableWindow(C(IDC_CANCEL), r);
+    for (int id : {IDC_TRK_TEXT, IDC_TRK_SAVE, IDC_TRK_RESET, IDC_TRK_LISTS, IDC_TRK_UPDATE})
+        EnableWindow(C(id), !r);
     for (int id : {IDC_SOURCE, IDC_SRC_FILE, IDC_SRC_DIR, IDC_TYPE, IDC_TMDB, IDC_CREW, IDC_OUTPUT, IDC_OUT_BROWSE})
         EnableWindow(C(id), !r);
     HMENU m = GetMenu(g.hwnd);
@@ -252,38 +254,85 @@ void LoadConfigTexts() {
 }
 
 void SaveTrackers(bool quiet) {
-    WriteConfigFile(L"trackers.txt", U8(GetText(IDC_TRK_TEXT)));
-    auto list = ParseTrackerList(U8(GetText(IDC_TRK_TEXT)));
-    size_t sources = TrackerListSources().size(), remote = CachedRemoteTrackers().size();
-    std::wstring info = L"Un tracker per riga, righe vuote e # ignorate. Validi: " + std::to_wstring(list.size());
-    if (sources) info += L"  +  " + std::to_wstring(remote) + L" da " + std::to_wstring(sources) + L" liste remote";
-    SetText(IDC_TRK_INFO, info);
-    if (!quiet) Log("trackers.txt salvato (" + std::to_string(list.size()) + " tracker validi).");
+    const auto list = ParseTrackerList(U8(GetText(IDC_TRK_TEXT)));
+    if (!WriteConfigFile(L"trackers.txt", U8(GetText(IDC_TRK_TEXT)))) {
+        Log("ERRORE: impossibile salvare trackers.txt.");
+        return;
+    }
+    SetText(IDC_TRK_INFO, L"Tracker nell'elenco: " + std::to_wstring(list.size()));
+    if (!quiet) Log("Elenco tracker salvato (" + std::to_string(list.size()) + " validi).");
 }
 
 void RunUpdateTrackerLists() {
-    if (TrackerListSources().empty()) {
-        MessageBoxW(g.hwnd, L"Nessuna lista attiva. Apri \"Liste remote\u2026\" e togli il # davanti a un URL.", L"Tracker", MB_ICONINFORMATION);
+    if (Checked(IDC_CHK_PRIVATE)) {
+        MessageBoxW(g.hwnd, L"Per un torrent privato usa nell'elenco solo i tracker del sito. "
+                    L"L'importazione da liste pubbliche è disattivata mentre Torrent privato è selezionato.",
+                    L"Tracker", MB_ICONINFORMATION);
         return;
     }
-    auto count = std::make_shared<size_t>(0);
+    if (TrackerListSources().empty()) {
+        MessageBoxW(g.hwnd, L"Nessuna fonte attiva. Apri Liste remote e togli # davanti all’URL della fonte da usare, poi salva.",
+                    L"Tracker", MB_ICONINFORMATION);
+        return;
+    }
+    const auto current = ParseTrackerList(U8(GetText(IDC_TRK_TEXT)));
+    auto remote = std::make_shared<std::vector<std::string>>();
     StartJob(
-        [count] {
-            SetProgress(20, "Aggiornamento liste tracker", "");
-            *count = UpdateRemoteTrackers(g.settings.trackerListsMax, &g.cancel, [](const std::string& s) { Log(s); }).size();
+        [remote] {
+            SetProgress(20, "Importazione tracker", "");
+            *remote = UpdateRemoteTrackers(g.settings.trackerListsMax, &g.cancel,
+                                           [](const std::string& line) { Log(line); });
         },
-        [count](bool ok, const std::string& err, bool) {
+        [remote, current](bool ok, const std::string& err, bool cancelled) {
             if (ok) {
+                const auto merged = MergeTrackers(current, *remote);
+                const auto added = merged.size() - current.size();
+                const std::string text = Join(merged, "\r\n") + "\r\n";
+                // Persist before replacing the visible list, so failed writes are not reported as success.
+                if (!WriteConfigFile(L"trackers.txt", text)) {
+                    Log("ERRORE: tracker scaricati, ma impossibile salvare l'elenco. Elenco precedente mantenuto.");
+                    SetProgress(0, "Elenco non salvato", "Impossibile scrivere trackers.txt");
+                    return;
+                }
+                SetTextU8(IDC_TRK_TEXT, text);
                 g.settings.trackerListsLast = UnixNow();
                 g.settings.Save();
-                Log("Liste tracker aggiornate: " + std::to_string(*count) + " tracker remoti.");
-                SetProgress(100, "Liste tracker aggiornate", std::to_string(*count) + " tracker");
+                Log("Tracker scaricati: " + std::to_string(remote->size()) + "; nuovi aggiunti: " +
+                    std::to_string(added) + "; totale nell'elenco: " + std::to_string(merged.size()) + ".");
+                SetProgress(100, "Elenco tracker aggiornato", std::to_string(added) + " nuovi tracker");
+                SaveTrackers(true);
             } else if (!err.empty()) {
-                Log("Liste tracker: " + err);
-                SetProgress(0, "Liste tracker non aggiornate", err);
+                Log("Importazione tracker non completata: " + err + ". Elenco precedente mantenuto.");
+                SetProgress(0, "Elenco tracker non aggiornato", err);
+            } else if (cancelled) {
+                SetProgress(0, "Importazione annullata", "Elenco precedente mantenuto");
             }
-            SaveTrackers(true);
         });
+}
+
+void ResetTrackers() {
+    const std::string defaults = DefaultContent(DefaultFile::Trackers);
+    if (!WriteConfigFile(L"trackers.txt", defaults)) {
+        MessageBoxW(g.hwnd, L"Impossibile salvare l'elenco predefinito.", L"Tracker", MB_ICONERROR);
+        return;
+    }
+    SetTextU8(IDC_TRK_TEXT, defaults);
+    // Keep configured URLs as commented examples, ready to enable for a later import.
+    std::string sources;
+    for (const auto& line : SplitLines(ReadConfigFile(L"tracker_lists.txt"))) {
+        const auto trimmed = Trim(line);
+        sources += (!trimmed.empty() && trimmed[0] != '#' ? "# " : "") + line + "\n";
+    }
+    const bool sourcesSaved = WriteConfigFile(L"tracker_lists.txt", sources);
+    const bool cacheCleared = WriteConfigFile(L"trackers_remote.txt", "");
+    if (!sourcesSaved || !cacheCleared)
+        Log("AVVISO: elenco ripristinato, ma pulizia delle fonti o della cache non completata.");
+    g.settings.trackerListsAuto = false;
+    g.settings.trackerListsLast = 0;
+    g.settings.Save();
+    SaveTrackers(true);
+    Log(sourcesSaved ? "Elenco tracker ripristinato ai predefiniti. Fonti remote disattivate."
+                     : "Elenco tracker ripristinato ai predefiniti. Controlla le fonti in Liste remote.");
 }
 
 void SaveShots(bool quiet) {
@@ -448,13 +497,9 @@ void StartRelease() {
     in.resume = Checked(IDC_CHK_RESUME);
     in.pieceSizeKiB = g.settings.pieceSizeKiB;
     in.trackers = ParseTrackerList(U8(GetText(IDC_TRK_TEXT)));
-    std::vector<std::string> manualTrackers = in.trackers;
-    bool useLists = !Checked(IDC_CHK_PRIVATE) && !TrackerListSources().empty();
-    bool refreshLists = useLists && Checked(IDC_CHK_TORRENT) && g.settings.trackerListsAuto && UnixNow() - g.settings.trackerListsLast > 24 * 3600;
-    if (useLists) in.trackers = MergeTrackers(manualTrackers, CachedRemoteTrackers());
     for (auto& l : SplitLines(U8(GetText(IDC_SHOT_TEXT)))) if (!Trim(l).empty()) in.timestamps.push_back(Trim(l));
     in.settings = g.settings;
-    if (in.torrent && in.trackers.empty() && !refreshLists) {
+    if (in.torrent && in.trackers.empty()) {
         MessageBoxW(g.hwnd, L"Nessun tracker valido: compila la scheda Tracker (uno per riga).", L"ReleaseForge", MB_ICONWARNING);
         SelectTab(TabTracker);
         return;
@@ -468,23 +513,9 @@ void StartRelease() {
     Log("==== Avvio release: " + U8(source));
     auto result = std::make_shared<JobResult>();
     StartJob(
-        [in, result, manualTrackers, refreshLists]() mutable {
+        [in, result]() mutable {
             UiHost host;
-            if (refreshLists) {
-                try {
-                    host.Log("Aggiornamento liste tracker remote...");
-                    auto remote = UpdateRemoteTrackers(in.settings.trackerListsMax, &g.cancel, [](const std::string& s) { Log(s); });
-                    in.trackers = MergeTrackers(manualTrackers, remote);
-                    g.settings.trackerListsLast = UnixNow();  // salvato a fine lavoro sul thread UI
-                } catch (Cancelled&) {
-                    throw;
-                } catch (std::exception& e) {
-                    host.Log(std::string("Liste tracker non aggiornate, uso la cache: ") + e.what());
-                }
-            }
-            if (in.trackers.size() > manualTrackers.size())
-                host.Log("Tracker: " + std::to_string(manualTrackers.size()) + " manuali + " +
-                         std::to_string(in.trackers.size() - manualTrackers.size()) + " dalle liste remote.");
+            host.Log("Tracker usati: " + std::to_string(in.trackers.size()) + " (elenco visibile nella scheda Tracker).");
             *result = RunRelease(in, host, g.cancel);
         },
         [result](bool ok, const std::string& err, bool cancelled) {
@@ -725,7 +756,7 @@ void CreateControls() {
     MakeEdit(IDC_TRK_TEXT, true, false);
     MakeButton(IDC_TRK_SAVE, L"Salva");
     MakeButton(IDC_TRK_RESET, L"Ripristina predefiniti");
-    MakeLabel(IDC_TRK_INFO, L"Un tracker per riga (http, https, udp, wss). Righe con # ignorate.", SS_ENDELLIPSIS);
+    MakeLabel(IDC_TRK_INFO, L"Elenco usato nel torrent. Un tracker per riga.", SS_ENDELLIPSIS);
     MakeButton(IDC_TRK_LISTS, L"Liste remote\u2026");
     MakeButton(IDC_TRK_UPDATE, L"Aggiorna dalle liste");
     MakeEdit(IDC_SHOT_TEXT, true, false);
@@ -893,7 +924,7 @@ void OnCommand(int id, int code) {
             }
             break;
         case IDC_TRK_UPDATE: if (!g.running) RunUpdateTrackerLists(); break;
-        case IDC_TRK_RESET: SetTextU8(IDC_TRK_TEXT, DefaultContent(DefaultFile::Trackers)); break;
+        case IDC_TRK_RESET: if (!g.running) ResetTrackers(); break;
         case IDC_SHOT_SAVE: SaveShots(false); break;
         case IDC_SHOT_RESET: SetTextU8(IDC_SHOT_TEXT, DefaultContent(DefaultFile::Screenshots)); break;
         case IDC_RUN: if (!g.running) StartRelease(); break;
