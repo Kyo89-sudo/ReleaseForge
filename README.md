@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="ReleaseForge.svg" width="128" height="128" alt="ReleaseForge">
+</p>
+
 # ReleaseForge
 
 Prima versione pubblica: **0.1.0** (Windows x64).
@@ -57,7 +61,7 @@ Correzioni rispetto all'originale:
 - `MBAFF`/`PAFF` riconosciuti come interlacciati (`1080i`);
 - lingue duplicate (`ITA ITA AC3 5.1`) unite; tracce senza canali non producono `None.0`;
 - sottotitoli senza lingua non fanno più fallire la generazione;
-- anno mancante: niente `()` vuote;
+- se l'anno non è disponibile, omette le parentesi vuote; quando presente, lo include normalmente nel titolo;
 - MP2 (`MPEG Audio Layer 2`), DTS-HD/`DTS XLL`, TrueHD e VC-1 con nomi puliti;
 - 4320p riconosciuto; spazi doppi rimossi.
 Senza MediaInfo il titolo usa i dati di FFmpeg.
