@@ -54,7 +54,7 @@ Aggiunte: **HDR** dopo il codec (`2160p H265 DV HDR10`, `HDR10+`, `HLG`) e **Atm
 Format_AdditionalFeatures) o, in ripiego, da FFmpeg.
 
 Correzioni rispetto all'originale:
-- contenuti 4:3 o pillarbox (es. 1440×1080) davano "810p": ora si usa l'altezza reale quando è maggiore;
+- per i video con bande laterali rimosse, considera anche l’altezza effettiva. Un file 1792×1080 viene quindi indicato come **1080p**; makerelease, calcolando la risoluzione solo dalla larghezza, lo indicava come **1008p**;
 - `MBAFF`/`PAFF` riconosciuti come interlacciati (`1080i`);
 - lingue duplicate (`ITA ITA AC3 5.1`) unite; tracce senza canali non producono `None.0`;
 - sottotitoli senza lingua non fanno più fallire la generazione;
