@@ -62,11 +62,6 @@ servizio di riserva seleziona **Nessun upload** nel relativo menu.
 
 Se l'host principale è **Nessun upload**, tutte le immagini restano in locale.
 
-**Imgbox e ImgBB sono servizi diversi.** Imgbox non è ancora integrato.
-Alla verifica del 21 ottobre 2026 la [pagina ufficiale Imgbox](https://imgbox.com/)
-segnala un disservizio del servizio: l'integrazione resta da verificare prima
-che possa essere proposta come alternativa nell'app.
-
 ## Dipendenze esterne
 
 | Strumento | A cosa serve | Come viene trovato |
