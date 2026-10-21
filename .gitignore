@@ -1,0 +1,28 @@
+# Build e pacchetti
+/build*/
+/dist/
+/out/
+*.exe
+*.obj
+*.o
+*.pdb
+*.ilk
+/core_tests
+
+# IDE
+.vs/
+.vscode/
+*.user
+CMakeUserPresets.json
+
+# Configurazione personale e output
+/settings.json
+/keys.json
+/config/
+/Output/
+.env
+.env.*
+
+# Sistema
+.DS_Store
+Thumbs.db

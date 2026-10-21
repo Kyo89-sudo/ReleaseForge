@@ -1,0 +1,39 @@
+#include <windows.h>
+#include "../resource.h"
+
+IDI_APP ICON "../ReleaseForge.ico"
+1 RT_MANIFEST "ReleaseForge.manifest"
+
+IDR_DEFAULT_TEMPLATE RCDATA "../../defaults/template.jinja"
+IDR_DEFAULT_TRACKERS RCDATA "../../defaults/trackers.txt"
+IDR_DEFAULT_SCREENSHOTS RCDATA "../../defaults/screenshots.txt"
+IDR_COUNTRIES RCDATA "../../defaults/countries.json"
+IDR_TEMPLATE_CLASSIC RCDATA "../../defaults/template_releaseforge-classico.jinja"
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION RF_VERSION_NUM
+ PRODUCTVERSION RF_VERSION_NUM
+ FILEFLAGSMASK 0x3fL
+ FILEFLAGS 0x0L
+ FILEOS VOS_NT_WINDOWS32
+ FILETYPE VFT_APP
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "041004b0"
+        BEGIN
+            VALUE "CompanyName", "ReleaseForge"
+            VALUE "FileDescription", "ReleaseForge - preparazione release"
+            VALUE "FileVersion", RF_VERSION_STR
+            VALUE "InternalName", "ReleaseForge"
+            VALUE "OriginalFilename", "ReleaseForge.exe"
+            VALUE "ProductName", "ReleaseForge"
+            VALUE "ProductVersion", RF_VERSION_STR
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x410, 1200
+    END
+END

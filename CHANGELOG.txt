@@ -1,0 +1,43 @@
+# Changelog
+
+## [0.1.0] - 2026-10-21
+
+Prima release pubblica.
+
+### Added
+
+- Core C++17 per parsing JSON, rendering dei template, composizione dei titoli
+  e generazione dei metainfo BitTorrent v1.
+- Encoder/decoder bencode, hashing SHA-1 dei pezzi, info-hash e magnet URI;
+  torrent a file singolo o multipli, tracker per tier e flag private.
+- Selezione automatica o manuale della dimensione dei pezzi e riuso dei torrent
+  compatibili con la sorgente; aggiornamento dei tracker senza modificare l'info-hash.
+- Pipeline per film, film con extra, stagioni e serie complete, con annullamento
+  dei processi esterni e riuso di report e grafico quando aggiornati.
+- Client TMDB per metadati e immagini; integrazione MediaInfo via DLL o CLI,
+  con ripiego su FFmpeg per i dati tecnici.
+- Estrazione screenshot con FFmpeg e grafico bitrate tramite ffprobe e GDI+.
+- Composizione del titolo con codec, risoluzione, lingue, sottotitoli, HDR,
+  Dolby Vision, Dolby Atmos e DTS:X.
+- Motore di template con sintassi compatibile con un sottoinsieme di Jinja2,
+  supporto multi-template, diagnostica con numero di riga ed editor integrato.
+- Upload su ImgBB, Pixhost, Imgur, Catbox e API Chevereto con host di riserva.
+- Liste tracker remote con deduplicazione, limite configurabile e cache locale;
+  esclusione delle liste remote per i torrent privati.
+- Interfaccia Win32 con DPI per monitor, drag and drop, scorciatoie da tastiera
+  e persistenza delle impostazioni in JSON.
+- Icona applicazione con simboli video e rete di condivisione, in formato
+  SVG e ICO multirisoluzione.
+
+### Build
+
+- Progetto CMake con target ReleaseForge e core_tests.
+- Script di build per MSVC e cross-compilazione con llvm-mingw.
+- Runtime MSVC statico e pacchetto portabile Windows x64.
+- Script installer per Inno Setup; FFmpeg e MediaInfo distribuiti separatamente.
+
+### License
+
+- Codice ReleaseForge distribuito sotto licenza MIT, copyright 2026 Kyos.
+- Attribuzioni e licenza MIT delle parti derivate da makerelease conservate
+  in THIRD-PARTY-NOTICES.txt.

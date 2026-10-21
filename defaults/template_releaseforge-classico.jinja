@@ -1,0 +1,62 @@
+[center][b][size=200][color=#3A6EA5]{{ TITLE }}{% if YEAR %} ({{ YEAR }}){% endif %}[/color][/size][/b][/center]
+
+{% if POSTER_URL %}[img]{{ POSTER_URL }}[/img]{% endif %}
+
+[img]https://i.imgur.com/Qkzo36F.png[/img]
+
+[color=#4A4A4A]
+[b]TMDB:[/b] [url={{ TMDB_URL }}][color=#2F5E8C]{{ TMDB_URL }}[/color][/url]
+[b]Titolo originale:[/b] {{ ORIGINAL_TITLE }}
+[b]Paese di produzione:[/b] {{ COUNTRY }}
+[b]Genere:[/b] {{ GENRE }}
+[b]Anno:[/b] {{ YEAR }}
+[b]Durata:[/b] {{ RUNTIME }}
+[b]Regia:[/b] {{ DIRECTOR }}
+{% if EP_COUNT is defined %}
+[b]Numero episodi:[/b] {{ EP_COUNT }}
+{% endif %}
+[/color]
+
+{% if CAST %}
+[img]https://i.imgur.com/Fht3gJQ.png[/img]
+
+[b][size=150][color=#3A6EA5]CAST[/color][/size][/b]
+[list]
+{% for person in CAST %}
+[*] [color=#4A4A4A]{{ person.name }}{% if person.character %}: [i]{{ person.character }}[/i]{% endif %}[/color]
+{% endfor %}
+[/list]
+{% endif %}
+
+[img]https://i.imgur.com/ih5a4O1.png[/img]
+
+[b][size=150][color=#3A6EA5]TRAMA[/color][/size][/b]
+[color=#4A4A4A]{{ PLOT }}[/color]
+
+{% if TRAILER %}
+[img]https://i.imgur.com/mYSVRnR.png[/img]
+
+[b][size=150][color=#3A6EA5]TRAILER[/color][/size][/b]
+[center][media]{{ TRAILER }}[/media][/center]
+{% endif %}
+
+[img]https://i.imgur.com/f69eUy7.png[/img]
+
+[b][size=150][color=#3A6EA5]SCREENSHOTS[/color][/size][/b]
+[spoiler]
+[center]{{ SCREENSHOTS }}[/center]
+[/spoiler]
+
+[img]https://i.imgur.com/CraDzL6.png[/img]
+
+[b][size=150][color=#3A6EA5]MEDIAINFO[/color][/size][/b]
+[code]
+{{ REPORT_MEDIAINFO }}
+[/code]
+
+[img]https://i.imgur.com/jTMfnFL.png[/img]
+
+[b][size=150][color=#3A6EA5]Download[/color][/size][/b]
+[color=#4A4A4A][b]Dimensione:[/b] {{ SIZE }}[/color]
+
+[magnet]{{ MAGNET }}[/magnet]
