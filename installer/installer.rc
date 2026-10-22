@@ -1,0 +1,51 @@
+#include <windows.h>
+#include "../src/resource.h"
+#include "setup_res.h"
+
+IDI_APP ICON "../src/ReleaseForge.ico"
+1 RT_MANIFEST "installer.manifest"
+
+#ifdef RF_WITH_PAYLOAD
+// Setup: contiene l'app e il programma di disinstallazione.
+// ReleaseForge.exe e uninstall.exe si trovano tramite le cartelle di inclusione (-I / /i):
+// la cartella dist con l'eseguibile appena compilato e la cartella payload della build.
+IDR_PAY_APP RCDATA "ReleaseForge.exe"
+IDR_PAY_UNINST RCDATA "uninstall.exe"
+IDR_PAY_LICENSE RCDATA "../LICENSE"
+IDR_PAY_README RCDATA "../README.md"
+IDR_PAY_NOTICES RCDATA "../THIRD-PARTY-NOTICES.txt"
+IDR_PAY_CHANGELOG RCDATA "../CHANGELOG.txt"
+#define RF_INST_DESC "Installazione di ReleaseForge"
+#define RF_INST_FILE "ReleaseForge-setup.exe"
+#else
+#define RF_INST_DESC "Disinstallazione di ReleaseForge"
+#define RF_INST_FILE "uninstall.exe"
+#endif
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION RF_VERSION_NUM
+ PRODUCTVERSION RF_VERSION_NUM
+ FILEFLAGSMASK 0x3fL
+ FILEFLAGS 0x0L
+ FILEOS VOS_NT_WINDOWS32
+ FILETYPE VFT_APP
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "041004b0"
+        BEGIN
+            VALUE "CompanyName", "Kyos"
+            VALUE "FileDescription", RF_INST_DESC
+            VALUE "FileVersion", RF_VERSION_STR
+            VALUE "InternalName", RF_INST_FILE
+            VALUE "OriginalFilename", RF_INST_FILE
+            VALUE "ProductName", "ReleaseForge"
+            VALUE "ProductVersion", RF_VERSION_STR
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x410, 1200
+    END
+END

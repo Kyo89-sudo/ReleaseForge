@@ -180,7 +180,14 @@ opzione privato, magnet con `dn`, `xl` e `tr`. SHA-1 con BCrypt di Windows.
 - **Visual Studio 2022** con "Sviluppo di applicazioni desktop con C++": doppio clic su `build.bat`
   (CMake di Visual Studio, build x64 Release statica, esegue i test, copia in `dist`).
   In alternativa *File → Apri → Cartella* in Visual Studio e compila il target `ReleaseForge`.
-- **Installer**: `build-installer.bat` (richiede Inno Setup 6.2+), produce `dist\ReleaseForge-0.1.3-win64-setup.exe`.
+- **Installer**: `build-installer.bat` produce `dist\ReleaseForge-0.1.3-win64-setup.exe`.
+  L'installer è nativo (`installer/setup.cpp`, stesso compilatore dell'app): non serve Inno Setup.
+  Installa per l'utente corrente senza diritti di amministratore in `%LOCALAPPDATA%\Programs\ReleaseForge`,
+  crea il collegamento nel menu Start (icona sul desktop facoltativa), si registra in *App installate*
+  e aggiorna senza problemi le installazioni fatte con il vecchio setup Inno.
+  Opzioni: `/S` silenzioso, `/DIR="cartella"`, `/DESKTOP`, `/MEDIAINFO`, `/LAUNCH`.
+  La disinstallazione (`uninstall.exe`, `/S` silenziosa, `/PURGE` anche impostazioni e strumenti)
+  rimuove solo i file installati e chiede se conservare impostazioni e template.
 - **Da Linux**: `build-mingw.sh` con llvm-mingw.
 - Test del core (anche su Linux/macOS): `g++ -std=c++17 -Isrc tests/core_tests.cpp src/core/*.cpp -o core_tests && ./core_tests`.
 

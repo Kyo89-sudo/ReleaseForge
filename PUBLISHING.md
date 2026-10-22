@@ -3,9 +3,11 @@
 Repository: https://github.com/Kyo89-sudo/ReleaseForge
 
 1. Aggiornare versione in CMakeLists.txt, src/resource.h,
-   src/app/ReleaseForge.manifest e installer/ReleaseForge.iss.
+   src/app/ReleaseForge.manifest e installer/installer.manifest
+   (l'installer legge il numero di versione da src/resource.h).
 2. Completare il changelog con le modifiche e la data della release.
 3. Eseguire build.bat e verificare manualmente le modifiche all'interfaccia.
+   Eseguire build-installer.bat e provare installazione, aggiornamento e disinstallazione.
 4. Creare commit e tag vVERSIONE sul repository esistente.
 5. Pubblicare la release con archivio portabile, sorgenti e checksum SHA-256.
 

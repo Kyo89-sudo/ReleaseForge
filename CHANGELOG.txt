@@ -1,5 +1,17 @@
 # Changelog
 
+## [Non pubblicata]
+
+### Changed
+
+- Installer nativo Win32 al posto di Inno Setup (installer/setup.cpp): stessa cartella
+  predefinita, nessun diritto di amministratore, collegamenti, voce in App installate,
+  MediaInfo facoltativo tramite winget, modalità silenziosa e aggiornamento automatico
+  delle installazioni fatte con il setup precedente.
+- Nuovo programma di disinstallazione: rimuove solo i file installati e chiede se
+  eliminare anche impostazioni, template e strumenti scaricati.
+- build-installer.bat non richiede più Inno Setup.
+
 ## [0.1.3] - 2026-10-21
 
 ### Changed
