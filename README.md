@@ -4,7 +4,7 @@
 
 # ReleaseForge
 
-Versione: **0.1.3** (Windows x64).
+Versione: **0.1.3.1** (Windows x64).
 
 ReleaseForge è un’applicazione Windows per creare torrent e preparare release di film e serie TV. Recupera i metadati da TMDB e genera report MediaInfo, screenshot, grafici del bitrate, link magnet, titoli e post BBCode da template.
 
@@ -183,7 +183,7 @@ opzione privato, magnet con `dn`, `xl` e `tr`. SHA-1 con BCrypt di Windows.
 - **Visual Studio 2022** con "Sviluppo di applicazioni desktop con C++": doppio clic su `build.bat`
   (CMake di Visual Studio, build x64 Release statica, esegue i test, copia in `dist`).
   In alternativa *File → Apri → Cartella* in Visual Studio e compila il target `ReleaseForge`.
-- **Installer**: `build-installer.bat` produce `dist\ReleaseForge-0.1.3-win64-setup.exe`.
+- **Installer**: `build-installer.bat` produce `dist\ReleaseForge-0.1.3.1-win64-setup.exe`.
   L'installer è nativo (`installer/setup.cpp`, stesso compilatore dell'app): non serve Inno Setup.
   Installa per l'utente corrente senza diritti di amministratore in `%LOCALAPPDATA%\Programs\ReleaseForge`,
   crea il collegamento nel menu Start (icona sul desktop facoltativa), si registra in *App installate*
