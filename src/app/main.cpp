@@ -280,14 +280,16 @@ void RunUpdateTrackerLists() {
     StartJob(
         [remote] {
             SetProgress(20, "Importazione tracker", "");
-            *remote = UpdateRemoteTrackers(g.settings.trackerListsMax, &g.cancel,
+            *remote = UpdateRemoteTrackers(&g.cancel,
                                            [](const std::string& line) { Log(line); });
         },
         [remote, current](bool ok, const std::string& err, bool cancelled) {
             if (ok) {
-                const auto merged = MergeTrackers(current, *remote);
+                // Il limite vale per l'elenco finale: con 6 tracker e limite 8 se ne aggiungono 2.
+                const size_t maxTotal = size_t(std::max(0, g.settings.trackerListsMax));
+                const auto merged = MergeTrackerLists(current, *remote, maxTotal);
                 const auto added = merged.size() - current.size();
-                const std::string text = Join(merged, "\r\n") + "\r\n";
+                const std::string text = FormatTrackerList(merged);
                 // Persist before replacing the visible list, so failed writes are not reported as success.
                 if (!WriteConfigFile(L"trackers.txt", text)) {
                     Log("ERRORE: tracker scaricati, ma impossibile salvare l'elenco. Elenco precedente mantenuto.");
@@ -299,6 +301,9 @@ void RunUpdateTrackerLists() {
                 g.settings.Save();
                 Log("Tracker scaricati: " + std::to_string(remote->size()) + "; nuovi aggiunti: " +
                     std::to_string(added) + "; totale nell'elenco: " + std::to_string(merged.size()) + ".");
+                if (maxTotal && current.size() >= maxTotal)
+                    Log("L'elenco ha già " + std::to_string(current.size()) + " tracker (limite " + std::to_string(maxTotal) +
+                        "): nessuno aggiunto. Alza il limite in Liste remote o togli qualche tracker.");
                 SetProgress(100, "Elenco tracker aggiornato", std::to_string(added) + " nuovi tracker");
                 SaveTrackers(true);
             } else if (!err.empty()) {
@@ -311,7 +316,7 @@ void RunUpdateTrackerLists() {
 }
 
 void ResetTrackers() {
-    const std::string defaults = DefaultContent(DefaultFile::Trackers);
+    const std::string defaults = FormatTrackerList(ParseTrackerList(DefaultContent(DefaultFile::Trackers)));
     if (!WriteConfigFile(L"trackers.txt", defaults)) {
         MessageBoxW(g.hwnd, L"Impossibile salvare l'elenco predefinito.", L"Tracker", MB_ICONERROR);
         return;

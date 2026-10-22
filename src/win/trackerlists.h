@@ -12,12 +12,10 @@ namespace rf {
 std::vector<std::string> TrackerListSources();   // URL validi da tracker_lists.txt
 std::vector<std::string> CachedRemoteTrackers();  // da trackers_remote.txt
 
-// Scarica tutte le liste, unisce e deduplica, tiene al massimo maxCount tracker e aggiorna la cache.
+// Scarica tutte le liste, unisce e deduplica (nell'ordine delle fonti) e aggiorna la cache.
+// Il limite si applica dopo, all'elenco finale (MergeTrackerLists in core/torrent.h).
 // Le liste che falliscono vengono saltate (riportate nel log). Lancia se nessuna lista è valida.
-std::vector<std::string> UpdateRemoteTrackers(int maxCount, const std::atomic<bool>* cancel,
+std::vector<std::string> UpdateRemoteTrackers(const std::atomic<bool>* cancel,
                                               const std::function<void(const std::string&)>& log);
-
-// Tracker manuali per primi, poi quelli remoti non duplicati.
-std::vector<std::string> MergeTrackers(const std::vector<std::string>& manual, const std::vector<std::string>& remote);
 
 }  // namespace rf

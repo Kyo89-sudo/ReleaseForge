@@ -150,6 +150,17 @@ int main(int argc, char** argv) {
     CHECK_EQ(PieceSizeForTotal(40ull * 1024 * 1024), (uint32_t)(32 * 1024), "piece size piccolo");
     auto tl = ParseTrackerList("udp://a.b:1/announce\r\n\r\n# commento\nhttp://x.y/announce\nnon-un-url\nudp://a.b:1/announce\n");
     CHECK_EQ(tl.size(), (size_t)2, "lista tracker deduplicata");
+    {
+        std::vector<std::string> cur = {"udp://a1/x", "udp://a2/x", "udp://a3/x", "udp://a4/x", "udp://a5/x", "udp://a6/x"};
+        auto m = MergeTrackerLists(cur, {"UDP://A1/x", "udp://n1/x", "udp://n2/x", "udp://n3/x"}, 8);
+        CHECK_EQ(m.size(), (size_t)8, "limite sull'elenco finale: 6 + 2 = 8");
+        CHECK_EQ(m[7], std::string("udp://n2/x"), "duplicati non contano nel limite");
+        CHECK_EQ(MergeTrackerLists(m, {"udp://n9/x"}, 8).size(), (size_t)8, "elenco già al limite");
+        CHECK_EQ(MergeTrackerLists(cur, {"udp://n1/x", "udp://n2/x", "udp://n3/x"}, 0).size(), (size_t)9, "limite 0 = tutti");
+        CHECK_EQ(FormatTrackerList({"udp://a/x", "http://b/y"}), std::string("udp://a/x\r\n\r\nhttp://b/y\r\n"),
+                 "riga vuota tra i tracker");
+        CHECK_EQ(ParseTrackerList(FormatTrackerList(m)).size(), (size_t)8, "righe vuote ignorate nel torrent");
+    }
 
     // --- SHA-1
     unsigned char d[20];

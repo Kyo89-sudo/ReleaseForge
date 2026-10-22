@@ -418,9 +418,9 @@ bool ShowTrackerLists(HWND owner, Settings& s) {
     b.Static(-1, L"ATTENZIONE: le righe con # sono disattivate. Togli # davanti all’URL per attivare una fonte.\n"
                  L"Usa URL di liste in formato testo, con un tracker per riga.", 7, 7, 316, 30);
     b.Edit(IDC_URLS, 7, 42, 316, 120, ES_MULTILINE | ES_WANTRETURN | ES_AUTOVSCROLL | WS_VSCROLL);
-    b.Static(-1, L"Aggiorna dalle liste unisce i tracker all’elenco visibile senza duplicati. Non ci sono aggiunte automatiche.",
+    b.Static(-1, L"Aggiorna dalle liste aggiunge tracker nuovi all’elenco visibile fino al massimo indicato (es. 6 + 2 = 8). Non ci sono aggiunte automatiche.",
              7, 168, 316, 22);
-    b.Static(-1, L"Massimo tracker per importazione (0 = tutti):", 7, 195, 170, 8);
+    b.Static(-1, L"Massimo tracker nell'elenco (0 = senza limite):", 7, 195, 170, 8);
     b.Edit(IDC_MAX, 180, 193, 40, 13, ES_NUMBER);
     b.Static(-1, L"Attenzione: togliere una fonte non elimina i tracker già importati. Rimuovili dall’elenco o premi Ripristina predefiniti.",
              7, 212, 316, 22);

@@ -24,17 +24,7 @@ std::vector<std::string> TrackerListSources() {
 
 std::vector<std::string> CachedRemoteTrackers() { return ParseTrackerList(ReadConfigFile(L"trackers_remote.txt")); }
 
-std::vector<std::string> MergeTrackers(const std::vector<std::string>& manual, const std::vector<std::string>& remote) {
-    std::vector<std::string> out = manual;
-    for (auto& t : remote) {
-        bool dup = false;
-        for (auto& m : out) if (IEquals(m, t)) { dup = true; break; }
-        if (!dup) out.push_back(t);
-    }
-    return out;
-}
-
-std::vector<std::string> UpdateRemoteTrackers(int maxCount, const std::atomic<bool>* cancel,
+std::vector<std::string> UpdateRemoteTrackers(const std::atomic<bool>* cancel,
                                               const std::function<void(const std::string&)>& log) {
     auto sources = TrackerListSources();
     if (sources.empty()) throw std::runtime_error("nessuna lista configurata (Tracker > Liste remote)");
@@ -51,7 +41,7 @@ std::vector<std::string> UpdateRemoteTrackers(int maxCount, const std::atomic<bo
             if (r.status != 200) throw std::runtime_error("HTTP " + std::to_string(r.status));
             auto list = ParseTrackerList(r.body);
             if (list.empty()) throw std::runtime_error("nessun tracker valido nel contenuto");
-            merged = MergeTrackers(merged, list);
+            merged = MergeTrackerLists(merged, list, 0);
             ++ok;
             log("Lista tracker: " + std::to_string(list.size()) + " da " + url);
         } catch (Cancelled&) {
@@ -61,7 +51,6 @@ std::vector<std::string> UpdateRemoteTrackers(int maxCount, const std::atomic<bo
         }
     }
     if (!ok) throw std::runtime_error("nessuna lista scaricata: tengo la cache precedente");
-    if (maxCount > 0 && int(merged.size()) > maxCount) merged.resize(size_t(maxCount));
     std::string text = "# Generato da ReleaseForge dalle liste in tracker_lists.txt - non modificare a mano\n";
     for (auto& t : merged) text += t + "\n";
     if (!WriteConfigFile(L"trackers_remote.txt", text))

@@ -125,8 +125,10 @@ SCREENSHOTS BITRATE_GRAPH REPORT_MEDIAINFO REPORT_AVINAPTIC SIZE MAGNET TREE EP_
 
 La scheda **Tracker** contiene un solo elenco modificabile: è quello usato per
 creare il torrent. Puoi inserire tracker manualmente oppure importarli dalle
-fonti con **Aggiorna dalle liste**. Il comando unisce i risultati all’elenco
-visibile, elimina i duplicati e salva la lista risultante.
+fonti con **Aggiorna dalle liste**. Il comando aggiunge all’elenco visibile i
+tracker nuovi (senza duplicati) e salva la lista risultante, con una riga vuota
+tra un tracker e l’altro. Le righe vuote servono solo a leggere meglio l’elenco:
+nel torrent ogni tracker resta in un tier proprio, nell’ordine dell’elenco.
 
 Le fonti sono esempi commentati nelle nuove configurazioni. Per usare
 [NewTrackon stable](https://newtrackon.com/list), apri **Liste remote…**, togli
@@ -136,9 +138,10 @@ come commento al successivo avvio; le altre fonti restano invariate.
 La lista stable seleziona tracker con oltre il 95% di uptime e almeno 10 giorni
 di storico; la raggiungibilità dalla tua rete può variare.
 
-Il limite predefinito è **8 tracker scaricati per importazione**. Imposta **0**
-per scaricare tutti i tracker validi delle fonti attive. Il limite riguarda
-l’importazione, non il totale dell’elenco dopo l’unione.
+Il limite predefinito è **8 tracker nell’elenco finale**: con i 6 predefiniti,
+un’importazione ne aggiunge 2. I tracker già presenti non vengono mai tolti; se
+l’elenco è già al limite non si aggiunge nulla. Imposta **0** per aggiungere tutti
+i tracker validi delle fonti attive.
 
 **Attenzione:** togliere o disattivare una fonte non elimina i tracker già importati.
 Restano nell’elenco e saranno usati finché non li cancelli o ripristini i predefiniti.

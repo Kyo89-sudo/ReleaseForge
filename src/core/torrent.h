@@ -92,6 +92,16 @@ std::string BuildMagnet(const std::string& infoHash, const std::string& name, ui
 bool IsValidTrackerUrl(const std::string& url);
 std::vector<std::string> ParseTrackerList(const std::string& text);  // una riga per tracker, deduplica
 
+// Unisce i tracker importati all'elenco: quelli già presenti restano tutti e per primi, poi i nuovi
+// (senza duplicati, maiuscole/minuscole ignorate) finché l'elenco arriva a maxTotal (0 = nessun limite).
+// Esempio: 6 nell'elenco, limite 8 -> si aggiungono 2 tracker.
+std::vector<std::string> MergeTrackerLists(const std::vector<std::string>& current, const std::vector<std::string>& imported,
+                                           size_t maxTotal);
+
+// Testo dell'elenco: un tracker per riga, con una riga vuota tra un tracker e l'altro.
+// Le righe vuote servono solo alla lettura: nel torrent ogni tracker resta in un tier proprio.
+std::string FormatTrackerList(const std::vector<std::string>& trackers);
+
 // Bencode generico (per test e lettura).
 std::string BencodeString(const std::string& s);
 std::string BencodeInt(int64_t v);

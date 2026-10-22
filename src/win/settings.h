@@ -32,7 +32,7 @@ struct Settings {
     bool winMax = false;
     bool toolsPromptShown = false;
     bool trackerListsAuto = false;      // campo legacy: aggiornamento automatico disattivato
-    int trackerListsMax = 8;          // massimo tracker presi dalle liste (0 = nessun limite)
+    int trackerListsMax = 8;          // massimo tracker nell'elenco dopo l'importazione (0 = nessun limite)
     long long trackerListsLast = 0;    // epoch dell'ultimo aggiornamento riuscito
 
     static Settings Load();

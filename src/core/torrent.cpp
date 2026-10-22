@@ -305,4 +305,26 @@ std::vector<std::string> ParseTrackerList(const std::string& text) {
     return out;
 }
 
+std::vector<std::string> MergeTrackerLists(const std::vector<std::string>& current, const std::vector<std::string>& imported,
+                                           size_t maxTotal) {
+    std::vector<std::string> out = current;
+    for (auto& t : imported) {
+        if (maxTotal && out.size() >= maxTotal) break;
+        bool dup = false;
+        for (auto& m : out) if (IEquals(m, t)) { dup = true; break; }
+        if (!dup) out.push_back(t);
+    }
+    return out;
+}
+
+std::string FormatTrackerList(const std::vector<std::string>& trackers) {
+    std::string out;
+    for (size_t i = 0; i < trackers.size(); ++i) {
+        if (i) out += "\r\n\r\n";
+        out += trackers[i];
+    }
+    if (!out.empty()) out += "\r\n";
+    return out;
+}
+
 }  // namespace rf
