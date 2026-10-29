@@ -183,9 +183,9 @@ bool ShowInput(HWND owner, const std::wstring& title, const std::wstring& prompt
 namespace {
 enum {
     IDC_TMDB = 200, IDC_IMGBB, IDC_HOST, IDC_FFMPEG, IDC_FFMPEG_BROWSE, IDC_FFMPEG_STATUS, IDC_FFMPEG_DL,
-    IDC_MI, IDC_MI_BROWSE, IDC_MI_STATUS, IDC_MI_INSTALL, IDC_AVI, IDC_AVI_BROWSE, IDC_PIECE, IDC_SHOWKEYS, IDC_HOST2, IDC_CHEV_URL, IDC_CHEV_KEY, IDC_IMGBB_HELP
+    IDC_MI, IDC_MI_BROWSE, IDC_MI_STATUS, IDC_MI_INSTALL, IDC_AVI, IDC_AVI_BROWSE, IDC_PIECE, IDC_SHOWKEYS, IDC_HOST2, IDC_CHEV_URL, IDC_CHEV_KEY, IDC_IMGBB_HELP, IDC_TORRENT_FORMAT
 };
-const int kPieces[] = {0, 256, 512, 1024, 2048, 4096, 8192, 16384};
+const int kPieces[] = {0, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384};
 
 struct ToolStatusResult {
     std::wstring ffmpeg;
@@ -215,7 +215,7 @@ ToolStatusResult CheckToolStatus(const std::wstring& ffmpegPath, const std::wstr
 
 bool ShowSettings(HWND owner, Settings& s, int& action) {
     action = 0;
-    DlgBuilder b(L"Impostazioni e strumenti", 350, 348);
+    DlgBuilder b(L"Impostazioni e strumenti", 350, 374);
     b.Group(L"Chiavi API e host immagini", 7, 5, 336, 122);
     b.Static(-1, L"TheMovieDB \u2014 API key v3 oppure API Read Access Token", 15, 17, 250, 8);
     b.Edit(IDC_TMDB, 15, 27, 320, 13, ES_PASSWORD);
@@ -247,11 +247,13 @@ bool ShowSettings(HWND owner, Settings& s, int& action) {
     b.Button(IDC_AVI_BROWSE, L"Sfoglia…", 276, 259, 59, 14);
     b.Static(-1, L"Servono FFmpeg (screenshot/bitrate) e MediaInfo completo (report e titolo).", 15, 277, 320, 8);
 
-    b.Group(L"Torrent", 7, 296, 200, 30);
-    b.Static(-1, L"Dimensione pezzi", 15, 310, 60, 8);
-    b.Combo(IDC_PIECE, 80, 307, 120, 120);
-    b.Button(IDOK, L"Salva", 223, 328, 58, 15, BS_DEFPUSHBUTTON);
-    b.Button(IDCANCEL, L"Annulla", 285, 328, 58, 15);
+    b.Group(L"Torrent", 7, 296, 336, 49);
+    b.Static(-1, L"Formato torrent", 15, 310, 60, 8);
+    b.Combo(IDC_TORRENT_FORMAT, 80, 307, 255, 70);
+    b.Static(-1, L"Dimensione pezzi", 15, 330, 60, 8);
+    b.Combo(IDC_PIECE, 80, 327, 255, 150);
+    b.Button(IDOK, L"Salva", 223, 352, 58, 15, BS_DEFPUSHBUTTON);
+    b.Button(IDCANCEL, L"Annulla", 285, 352, 58, 15);
 
     // The worker owns only input strings and its result. It never touches HWNDs
     // or Settings, so closing the dialog does not wait for a slow tool probe.
@@ -308,6 +310,9 @@ bool ShowSettings(HWND owner, Settings& s, int& action) {
                     }
                     SendDlgItemMessageW(h, cb, CB_SETCURSEL, idx, 0);
                 }
+                for (auto label : {L"Hybrid v1 + v2 (predefinito)", L"BitTorrent v1", L"BitTorrent v2"})
+                    SendDlgItemMessageW(h, IDC_TORRENT_FORMAT, CB_ADDSTRING, 0, (LPARAM)label);
+                SendDlgItemMessageW(h, IDC_TORRENT_FORMAT, CB_SETCURSEL, int(s.torrentFormat), 0);
                 HWND piece = GetDlgItem(h, IDC_PIECE);
                 int sel = 0;
                 for (int i = 0; i < int(std::size(kPieces)); ++i) {
@@ -395,6 +400,8 @@ bool ShowSettings(HWND owner, Settings& s, int& action) {
                     s.ffmpegPath = W(Trim(U8(GetDlgText(h, IDC_FFMPEG))));
                     s.mediaInfoPath = W(Trim(U8(GetDlgText(h, IDC_MI))));
                     s.avinapticPath = W(Trim(U8(GetDlgText(h, IDC_AVI))));
+                    int tf = int(SendDlgItemMessageW(h, IDC_TORRENT_FORMAT, CB_GETCURSEL, 0, 0));
+                    s.torrentFormat = tf >= 0 && tf <= 2 ? TorrentFormat(tf) : TorrentFormat::Hybrid;
                     int ps = int(SendDlgItemMessageW(h, IDC_PIECE, CB_GETCURSEL, 0, 0));
                     s.pieceSizeKiB = ps >= 0 && ps < int(std::size(kPieces)) ? kPieces[ps] : 0;
                     saved = true;

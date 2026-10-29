@@ -35,13 +35,14 @@ BEGIN
     BEGIN
         BLOCK "041004b0"
         BEGIN
-            VALUE "CompanyName", "Kyos"
+            VALUE "CompanyName", RF_AUTHOR
             VALUE "FileDescription", RF_INST_DESC
             VALUE "FileVersion", RF_VERSION_STR
             VALUE "InternalName", RF_INST_FILE
             VALUE "OriginalFilename", RF_INST_FILE
             VALUE "ProductName", "ReleaseForge"
             VALUE "ProductVersion", RF_VERSION_STR
+            VALUE "LegalCopyright", "Copyright (c) 2026 Kyo89-sudo. MIT License."
         END
     END
     BLOCK "VarFileInfo"

@@ -19,9 +19,11 @@ if errorlevel 1 goto :error
 copy /y build-installer\Release\ReleaseForge-*-win64-setup.exe dist\ >nul
 if errorlevel 1 goto :error
 echo OK: installer in dist
+if /i "%~1"=="nopause" exit /b 0
 pause
 exit /b 0
 :error
 echo Installer non creato: leggi il primo errore qui sopra.
+if /i "%~1"=="nopause" exit /b 1
 pause
 exit /b 1

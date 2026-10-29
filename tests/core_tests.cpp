@@ -1,5 +1,5 @@
 // Test del core portabile (compilabili anche su Linux/macOS):
-//   g++ -std=c++17 -Isrc tests/core_tests.cpp src/core/*.cpp -o core_tests && ./core_tests [cartella-fixture]
+//   g++ -std=c++23 -Isrc tests/core_tests.cpp src/core/*.cpp -o core_tests && ./core_tests [cartella-fixture]
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -188,6 +188,7 @@ int main(int argc, char** argv) {
         std::ifstream list(std::string(argv[1]) + "/files.txt");
         std::string line;
         TorrentSpec spec;
+        spec.format = TorrentFormat::V1;
         spec.name = "fixture";
         spec.singleFile = false;
         std::vector<std::string> paths;

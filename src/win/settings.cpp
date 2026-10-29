@@ -53,7 +53,10 @@ Settings Settings::Load() {
         s.outputDir = W(Str(j, "outputDir", ""));
         s.crew = Str(j, "crew", "");
         s.privateTorrent = Bool(j, "privateTorrent", false);
+        s.torrentFormat = ParseTorrentFormat(Str(j, "torrentFormat", "hybrid"));
         s.pieceSizeKiB = Int(j, "pieceSizeKiB", 0);
+        if (s.pieceSizeKiB < 0 || s.pieceSizeKiB > 16384 ||
+            (s.pieceSizeKiB && !ValidPieceLength(uint32_t(s.pieceSizeKiB) * 1024u))) s.pieceSizeKiB = 0;
         s.releaseType = std::clamp(Int(j, "releaseType", 0), 0, 4);
         s.screenshots = Bool(j, "screenshots", true);
         s.torrent = Bool(j, "torrent", true);
@@ -92,6 +95,7 @@ bool Settings::Save() const {
     j += "  \"outputDir\": " + q(U8(outputDir)) + ",\n";
     j += "  \"crew\": " + q(crew) + ",\n";
     j += "  \"privateTorrent\": " + b(privateTorrent) + ",\n";
+    j += "  \"torrentFormat\": " + q(TorrentFormatName(torrentFormat)) + ",\n";
     j += "  \"pieceSizeKiB\": " + std::to_string(pieceSizeKiB) + ",\n";
     j += "  \"releaseType\": " + std::to_string(releaseType) + ",\n";
     j += "  \"screenshots\": " + b(screenshots) + ",\n";

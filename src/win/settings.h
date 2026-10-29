@@ -4,6 +4,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include "../core/torrent.h"
 
 namespace rf {
 
@@ -19,6 +20,7 @@ struct Settings {
     std::wstring avinapticPath;
     std::wstring outputDir;            // vuoto = Documenti\ReleaseForge\Output
     std::string crew;
+    TorrentFormat torrentFormat = TorrentFormat::Hybrid;
     bool privateTorrent = false;
     int pieceSizeKiB = 0;              // 0 = automatico (tabella MIRCrew)
     int releaseType = 0;               // 0 auto, 1 film, 2 film+extra, 3 stagione, 4 serie completa

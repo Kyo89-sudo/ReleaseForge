@@ -4,7 +4,7 @@
 
 # ReleaseForge
 
-Versione: **0.1.3.1** (Windows x64).
+Versione: **0.2.0** (Windows x64).
 
 ReleaseForge è un’applicazione Windows per creare torrent e preparare release di film e serie TV. Recupera i metadati da TMDB e genera report MediaInfo, screenshot, grafici del bitrate, link magnet, titoli e post BBCode da template.
 
@@ -166,7 +166,7 @@ Per le cartelle vengono compilati `TREE` e, per le serie, `EP_COUNT`. File spazz
 
 Con **Riprendi** attivo (predefinito), se nella cartella di output ci sono già:
 - `<nome>.torrent` → viene riusato senza ricalcolare gli hash solo se descrive esattamente gli stessi file
-  (nomi, dimensioni, dimensione pezzi, flag privato) e nessun file è stato modificato dopo la sua creazione;
+  (nomi, dimensioni, formato v1/v2/hybrid, dimensione pezzi, flag privato) e nessun file è stato modificato dopo la sua creazione;
   i tracker vengono comunque aggiornati (l'info-hash non cambia);
 - `report_mediainfo.txt` → riusato così com'è (le modifiche manuali restano), se più recente del video;
 - `bitrate.png` → riusato se più recente del video.
@@ -174,16 +174,37 @@ Il titolo usa comunque i dati tecnici letti dal file. Togli la spunta per rigene
 
 ## Torrent
 
-BitTorrent v1, un tracker per tier (come torf), pezzi secondo la tabella MIRCrew di makerelease
-(32 KiB fino a 50 MB … 16 MiB oltre 16 GB) o dimensione manuale nelle impostazioni,
-opzione privato, magnet con `dn`, `xl` e `tr`. SHA-1 con BCrypt di Windows.
+In **Strumenti → Impostazioni e strumenti → Torrent**, il menu **Formato torrent** offre:
+- **Hybrid v1 + v2 (predefinito)**: compatibilità con entrambi i protocolli;
+- **BitTorrent v1**: metadati BEP 3 e hash SHA-1;
+- **BitTorrent v2**: metadati BEP 52 e hash SHA-256.
+
+La scelta viene salvata in `torrentFormat` (`hybrid`, `v1`, `v2`). Le configurazioni
+esistenti senza questo campo, o con un valore sconosciuto, usano **hybrid**.
+La dimensione dei pezzi resta automatica secondo la tabella MIRCrew di makerelease
+(32 KiB fino a 50 MB … 16 MiB oltre 16 GB), oppure manuale da 16 KiB a 16 MiB
+(potenze di due). Il flag **Privato** resta nella finestra principale; i tracker
+si modificano nella scheda **Tracker**, uno per tier.
+
+Il formato v2 usa alberi Merkle per file con blocchi da 16 KiB, `file tree` e
+`piece layers` esterni al dizionario `info`. Hybrid aggiunge file di padding
+virtuali BEP 47 tra i file quando serve allinearli ai pezzi: nessun file di padding
+viene scritto nella sorgente. La cartella `.pad` è riservata al padding hybrid.
+I file vengono ordinati per componenti del percorso UTF-8 nei formati v2/hybrid.
+Lettura e hashing sono streaming, con BCrypt di Windows e ripiego portabile.
+
+I magnet includono `btih` per v1, `btmh` per v2 ed entrambi per hybrid, oltre a
+`dn`, `xl` (solo dati reali) e `tr`. **Riprendi** verifica anche formato, layout,
+radici Merkle e piece layers: cambiare formato forza la rigenerazione. Un semplice
+aggiornamento dei tracker conserva entrambi gli info-hash. Torrent esterni con
+campi `info` o layout non supportati vengono rigenerati, senza riusare hash parziali.
 
 ## Compilare
 
-- **Visual Studio 2022** con "Sviluppo di applicazioni desktop con C++": doppio clic su `build.bat`
+- **Visual Studio 2022 aggiornato (17.14+) o Visual Studio 2026** con "Sviluppo di applicazioni desktop con C++": doppio clic su `build.bat`
   (CMake di Visual Studio, build x64 Release statica, esegue i test, copia in `dist`).
   In alternativa *File → Apri → Cartella* in Visual Studio e compila il target `ReleaseForge`.
-- **Installer**: `build-installer.bat` produce `dist\ReleaseForge-0.1.3.1-win64-setup.exe`.
+- **Installer**: `build-installer.bat` produce `dist\ReleaseForge-0.2.0-win64-setup.exe`.
   L'installer è nativo (`installer/setup.cpp`, stesso compilatore dell'app): non serve Inno Setup.
   Installa per l'utente corrente senza diritti di amministratore in `%LOCALAPPDATA%\Programs\ReleaseForge`,
   crea il collegamento nel menu Start (icona sul desktop facoltativa), si registra in *App installate*
@@ -192,7 +213,8 @@ opzione privato, magnet con `dn`, `xl` e `tr`. SHA-1 con BCrypt di Windows.
   La disinstallazione (`uninstall.exe`, `/S` silenziosa, `/PURGE` anche impostazioni e strumenti)
   rimuove solo i file installati e chiede se conservare impostazioni e template.
 - **Da Linux**: `build-mingw.sh` con llvm-mingw.
-- Test del core (anche su Linux/macOS): `g++ -std=c++17 -Isrc tests/core_tests.cpp src/core/*.cpp -o core_tests && ./core_tests`.
+- Standard richiesto: **C++23**, CMake 3.20+ e libreria standard con `<bit>`.
+- Test del core (anche su Linux/macOS): `g++ -std=c++23 -Isrc tests/core_tests.cpp src/core/*.cpp -o core_tests && ./core_tests`.
 
 ## File e cartelle
 
@@ -204,7 +226,7 @@ opzione privato, magnet con `dn`, `xl` e `tr`. SHA-1 con BCrypt di Windows.
 
 ## Autore e licenza
 
-ReleaseForge è sviluppato da [Kyos](https://github.com/Kyo89-sudo) e distribuito
+ReleaseForge è sviluppato da [Kyo89-sudo](https://github.com/Kyo89-sudo) e distribuito
 sotto licenza [MIT](LICENSE).
 
 Il progetto include parti derivate da [makerelease](https://github.com/c137ricksanchez/makerelease)

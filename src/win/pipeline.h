@@ -21,6 +21,7 @@ struct JobInput {
     std::wstring outputRoot;
     bool screenshots = true, torrent = true, upload = true, bitrateGraph = true, privateTorrent = false;
     bool resume = true;            // riusa .torrent, report_mediainfo.txt e bitrate.png se validi
+    TorrentFormat torrentFormat = TorrentFormat::Hybrid;
     int pieceSizeKiB = 0;
     std::vector<std::string> trackers;
     std::vector<std::string> timestamps;

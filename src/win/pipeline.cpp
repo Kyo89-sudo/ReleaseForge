@@ -1,4 +1,5 @@
 #include "pipeline.h"
+#include <cstring>
 #include "winutil.h"  // prima delle intestazioni Win32 specifiche
 
 #include <bcrypt.h>
@@ -58,8 +59,8 @@ namespace {
 
 class Hasher {
 public:
-    Hasher() {
-        if (BCryptOpenAlgorithmProvider(&alg_, BCRYPT_SHA1_ALGORITHM, nullptr, BCRYPT_HASH_REUSABLE_FLAG) != 0) {
+    explicit Hasher(bool sha256 = false) : sha256_(sha256) {
+        if (BCryptOpenAlgorithmProvider(&alg_, sha256_ ? BCRYPT_SHA256_ALGORITHM : BCRYPT_SHA1_ALGORITHM, nullptr, BCRYPT_HASH_REUSABLE_FLAG) != 0) {
             alg_ = nullptr;
             return;
         }
@@ -69,12 +70,20 @@ public:
         if (hash_) BCryptDestroyHash(hash_);
         if (alg_) BCryptCloseAlgorithmProvider(alg_, 0);
     }
-    void Hash(const unsigned char* d, size_t n, unsigned char out[20]) {
-        if (hash_ && BCryptHashData(hash_, const_cast<PUCHAR>(d), ULONG(n), 0) == 0 && BCryptFinishHash(hash_, out, 20, 0) == 0) return;
-        Sha1::Hash(d, n, out);  // ripiego portabile
+    void Hash(const unsigned char* d, size_t n, unsigned char* out) {
+        if (hash_) {
+            if (BCryptHashData(hash_, const_cast<PUCHAR>(d), ULONG(n), 0) == 0 &&
+                BCryptFinishHash(hash_, out, sha256_ ? 32 : 20, 0) == 0) return;
+            // A failed reusable hash may have partial state: retire it before fallback.
+            BCryptDestroyHash(hash_); hash_ = nullptr;
+        }
+        if (sha256_) {
+            auto digest = Sha256::Hash(d, n); std::memcpy(out, digest.data(), 32);
+        } else Sha1::Hash(d, n, out);
     }
 
 private:
+    bool sha256_ = false;
     BCRYPT_ALG_HANDLE alg_ = nullptr;
     BCRYPT_HASH_HANDLE hash_ = nullptr;
 };
@@ -265,8 +274,15 @@ JobResult RunRelease(const JobInput& in, JobHost& host, const std::atomic<bool>&
         if (in.trackers.empty()) throw std::runtime_error("Nessun tracker valido: compila la scheda Tracker.");
         if (!isFile && (name.empty() || name.find(L':') != std::wstring::npos))
             throw std::runtime_error("Non si può creare un torrent dalla radice di un'unità: seleziona la cartella della release.");
+        if (in.torrentFormat != TorrentFormat::V1 && !isFile)
+            std::sort(files.begin(), files.end(), [](const DirEntry& a, const DirEntry& b) {
+                return Split(U8(a.relPath), '\\') < Split(U8(b.relPath), '\\');
+            });
+        if (in.pieceSizeKiB < 0 || in.pieceSizeKiB > 16384) throw std::runtime_error("Dimensione pezzi non valida");
         uint32_t piece = in.pieceSizeKiB > 0 ? uint32_t(in.pieceSizeKiB) * 1024u : PieceSizeForTotal(totalSize);
         TorrentSpec spec;
+        spec.format = in.torrentFormat;
+        if (!ValidPieceLength(piece)) throw std::runtime_error("Dimensione pezzi non valida");
         spec.name = U8(isFile ? PathFileName(source) : name);
         spec.singleFile = isFile;
         for (auto& f : files) {
@@ -288,20 +304,16 @@ JobResult RunRelease(const JobInput& in, JobHost& host, const std::atomic<bool>&
             std::string old, why;
             ParsedTorrent pt;
             if (!ReadFileBytes(res.torrentFile, old) || !ParseTorrent(old, pt, &why)) why = why.empty() ? "illeggibile" : why;
-            else if (pt.name != spec.name || pt.singleFile != spec.singleFile || pt.files.size() != spec.files.size()) why = "contenuto diverso";
-            else if (pt.pieceLength != spec.pieceLength) why = "dimensione pezzi diversa";
-            else if (pt.isPrivate != spec.isPrivate) why = "flag privato diverso";
-            else if (pt.source != spec.source) why = "campo source diverso";
-            else {
-                for (size_t k = 0; k < files.size() && why.empty(); ++k) {
-                    if (pt.files[k].length != spec.files[k].length || pt.files[k].path != spec.files[k].path) why = "file diversi";
-                    else if (FileMtimeUnix(files[k].fullPath) > pt.creationDate) why = U8(files[k].relPath) + " modificato dopo la creazione";
-                }
-                uint64_t expectedPieces = (totalSize + piece - 1) / piece;
-                if (why.empty() && pt.pieces.size() != expectedPieces * 20) why = "numero di pezzi incoerente";
+            else if (TorrentMatches(pt, spec, &why)) {
+                for (size_t k = 0; k < files.size() && why.empty(); ++k)
+                    if (FileMtimeUnix(files[k].fullPath) > pt.creationDate) why = U8(files[k].relPath) + " modificato dopo la creazione";
             }
             if (why.empty()) {
                 spec.pieces = pt.pieces;
+                for (size_t i = 0; i < spec.files.size(); ++i) {
+                    spec.files[i].piecesRoot = pt.files[i].piecesRoot;
+                    spec.files[i].pieceLayer = pt.files[i].pieceLayer;
+                }
                 spec.creationDate = pt.creationDate;
                 reused = true;
                 log("3. Torrent esistente riutilizzato senza ricalcolare gli hash (stessi file); aggiornati i tracker.");
@@ -311,12 +323,17 @@ JobResult RunRelease(const JobInput& in, JobHost& host, const std::atomic<bool>&
         }
         if (!reused) {
         log("3. Creazione torrent: " + std::to_string(files.size()) + " file, " + SizeOf(totalSize) + ", pezzi da " + std::to_string(piece / 1024) + " KiB");
-        Hasher hasher;
+        Hasher hasher, hasher256(true);
         PieceHasher ph(piece, [&](const unsigned char* d, size_t n, unsigned char out[20]) { hasher.Hash(d, n, out); });
         std::vector<char> buf(4u << 20);
         ULONGLONG started = GetTickCount64(), lastReport = 0;
         uint64_t done = 0;
-        for (auto& f : files) {
+        for (size_t fileIndex = 0; fileIndex < files.size(); ++fileIndex) {
+            auto& f = files[fileIndex];
+            V2FileHasher v2(piece, [&](const unsigned char* data, size_t len) {
+                unsigned char digest[32]; hasher256.Hash(data, len, digest);
+                return std::string(reinterpret_cast<const char*>(digest), 32);
+            });
             // Condivisione completa: il file può essere aperto anche da un client torrent o da un player.
             HANDLE h = CreateFileW(LongPath(f.fullPath).c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                                    nullptr, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, nullptr);
@@ -331,7 +348,8 @@ JobResult RunRelease(const JobInput& in, JobHost& host, const std::atomic<bool>&
                 }
                 if (read == 0) break;
                 if (cancel.load()) { CloseHandle(h); throw Cancelled(); }
-                ph.Feed(buf.data(), read);
+                if (spec.format != TorrentFormat::V2) ph.Feed(buf.data(), read);
+                if (spec.format != TorrentFormat::V1) v2.Feed(buf.data(), read);
                 done += read;
                 fileDone += read;
                 ULONGLONG now = GetTickCount64();
@@ -342,18 +360,27 @@ JobResult RunRelease(const JobInput& in, JobHost& host, const std::atomic<bool>&
                     double eta = rate > 0 ? (totalSize - done) / 1048576.0 / rate : -1;
                     char d[160];
                     std::snprintf(d, sizeof d, "%.0f / %.0f MiB  -  %.1f MiB/s  -  ~%s", done / 1048576.0, totalSize / 1048576.0, rate, FormatEta(eta).c_str());
-                    host.Progress(15 + 45.0 * double(done) / double(totalSize), "Hashing SHA-1", d);
+                    host.Progress(15 + 45.0 * double(done) / double(totalSize), spec.format == TorrentFormat::V1 ? "Hashing SHA-1" : spec.format == TorrentFormat::V2 ? "Hashing SHA-256" : "Hashing SHA-1 + SHA-256", d);
                 }
             }
             CloseHandle(h);
             if (fileDone != f.size) throw std::runtime_error("Il file è cambiato durante la lettura: " + U8(f.relPath));
+            if (spec.format != TorrentFormat::V1) v2.Finish(spec.files[fileIndex].piecesRoot, spec.files[fileIndex].pieceLayer);
+            if (spec.format == TorrentFormat::Hybrid && !isFile && fileIndex + 1 < files.size()) {
+                size_t padding = size_t((piece - f.size % piece) % piece);
+                std::fill(buf.begin(), buf.end(), '\0');
+                while (padding) {
+                    size_t n = std::min(padding, buf.size());
+                    ph.Feed(buf.data(), n); padding -= n;
+                }
+            }
         }
-        spec.pieces = ph.Finish();
+        if (spec.format != TorrentFormat::V2) spec.pieces = ph.Finish();
         }
         TorrentResult tr = BuildTorrent(spec);
         if (!WriteFileBytes(res.torrentFile, tr.bencoded)) throw std::runtime_error("Scrittura .torrent fallita: " + U8(res.torrentFile));
-        res.magnet = BuildMagnet(tr.infoHash, spec.name, totalSize, in.trackers);
-        log(std::string(reused ? "Torrent aggiornato: " : "Torrent creato: ") + U8(PathFileName(res.torrentFile)) + "  info-hash " + tr.infoHash);
+        res.magnet = BuildMagnet(tr, spec.name, totalSize, in.trackers);
+        log(std::string(reused ? "Torrent aggiornato: " : "Torrent creato: ") + U8(PathFileName(res.torrentFile)) + "  info-hash " + tr.infoHash + (tr.infoHashV2.empty() ? "" : "  v2 " + tr.infoHashV2));
     } else {
         log("3. Torrent: saltato.");
     }

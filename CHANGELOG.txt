@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.2.0] - 2026-10-29
+
+### Added
+
+- Generazione torrent BitTorrent v1 (BEP 3), v2 (BEP 52) e hybrid.
+- Selettore del formato in Impostazioni e strumenti; hybrid predefinito anche
+  per le impostazioni esistenti. SHA-256, alberi Merkle, file tree e piece layers.
+- Padding virtuale hybrid, magnet btih/btmh e hashing streaming in un solo passaggio.
+- Test C++ e confronto indipendente hashlib/bencode su 162 torrent, con controllo
+  opzionale di compatibilità libtorrent sui 153 torrent con dati.
+- Link al repository Kyo89-sudo/ReleaseForge nel menu Aiuto.
+
+### Changed
+
+- Standard C++23 per applicazione, test e installer.
+- Ripresa sensibile al formato; validazione del bencode, layout hybrid e piece layers.
+- Informazioni, autore e metadati del setup aggiornati a Kyo89-sudo.
+- Applicazione e setup sincronizzati alla versione 0.2.0 (risorse Windows 0.2.0.0).
+
 ## [0.1.3.1] - 2026-10-22
 
 ### Changed

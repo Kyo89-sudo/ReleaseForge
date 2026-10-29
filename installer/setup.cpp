@@ -35,8 +35,8 @@ namespace {
 const wchar_t kAppName[] = L"ReleaseForge";
 const wchar_t kAppExe[] = L"ReleaseForge.exe";
 const wchar_t kUninstExe[] = L"uninstall.exe";
-const wchar_t kPublisher[] = L"Kyos";
-const wchar_t kUrl[] = L"https://github.com/Kyo89-sudo/ReleaseForge";
+const wchar_t kPublisher[] = RF_AUTHOR_W;
+const wchar_t kUrl[] = RF_REPOSITORY_W;
 // Stesso AppId del vecchio installer Inno Setup: la voce in "App installate" resta una sola.
 const wchar_t kUninstKey[] =
     L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{D435F294-B487-42C4-AD02-C1B837976034}";

@@ -40,7 +40,7 @@ enum : int {
     IDC_STATUS, IDC_PROGRESS, IDC_DETAILS, IDC_CANCEL, IDC_RUN,
     IDC_LBL_SOURCE, IDC_LBL_TYPE, IDC_LBL_TMDB, IDC_LBL_CREW, IDC_LBL_OUTPUT, IDC_LBL_TITLE,
     IDM_OPEN_FILE = 2000, IDM_OPEN_DIR, IDM_EXIT, IDM_SETTINGS, IDM_DL_FFMPEG, IDM_INSTALL_MI, IDM_CONFIG_DIR, IDM_OUTPUT_DIR,
-    IDM_CHECK_TOOLS, IDM_VARS, IDM_ABOUT, IDM_MAKERELEASE
+    IDM_CHECK_TOOLS, IDM_VARS, IDM_ABOUT, IDM_MAKERELEASE, IDM_GITHUB
 };
 
 constexpr UINT WM_APP_DONE = WM_APP + 1;
@@ -500,6 +500,7 @@ void StartRelease() {
     in.upload = Checked(IDC_CHK_UPLOAD);
     in.bitrateGraph = Checked(IDC_CHK_BITRATE);
     in.resume = Checked(IDC_CHK_RESUME);
+    in.torrentFormat = g.settings.torrentFormat;
     in.pieceSizeKiB = g.settings.pieceSizeKiB;
     in.trackers = ParseTrackerList(U8(GetText(IDC_TRK_TEXT)));
     for (auto& l : SplitLines(U8(GetText(IDC_SHOT_TEXT)))) if (!Trim(l).empty()) in.timestamps.push_back(Trim(l));
@@ -795,6 +796,7 @@ HMENU CreateMainMenu() {
     AppendMenuW(tools, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(tools, MF_STRING, IDM_CONFIG_DIR, L"Apri cartella &configurazione (template, tracker)");
     AppendMenuW(help, MF_STRING, IDM_VARS, L"&Variabili dei template");
+    AppendMenuW(help, MF_STRING, IDM_GITHUB, L"ReleaseForge su &GitHub (Kyo89-sudo)");
     AppendMenuW(help, MF_STRING, IDM_MAKERELEASE, L"Progetto &makerelease (GitHub)");
     AppendMenuW(help, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(help, MF_STRING, IDM_ABOUT, L"&Informazioni");
@@ -953,12 +955,19 @@ void OnCommand(int id, int code) {
         case IDM_DL_FFMPEG: RunDownloadFfmpeg(); break;
         case IDM_INSTALL_MI: RunInstallMediaInfo(); break;
         case IDM_CHECK_TOOLS: CheckTools(false); SelectTab(TabLog); break;
+        case IDM_GITHUB: OpenUrl(RF_REPOSITORY_W); break;
         case IDM_MAKERELEASE: OpenUrl(L"https://github.com/c137ricksanchez/makerelease"); break;
         case IDM_ABOUT: {
-            std::wstring about = std::wstring(L"ReleaseForge " RF_VERSION_W L"\nApp Win32 nativa per preparare release: metadati TMDB, report MediaInfo,\n"
-                        L"screenshot, torrent, grafico bitrate e post BBCode da template.\n\n"
-                        L"Template standard, titolo della release e flusso basati su makerelease\n"
-                        L"(c) Rick Sanchez & Norman, licenza MIT.\n\nImpostazioni: ") + SettingsPath() + L"\nConfigurazione: " + ConfigDir();
+            std::wstring about = std::wstring(L"ReleaseForge " RF_VERSION_W L"\n"
+                        L"Sviluppato da " RF_AUTHOR_W L"\n"
+                        L"GitHub: " RF_GITHUB_W L"\n"
+                        L"Progetto: " RF_REPOSITORY_W L"\n\n"
+                        L"Preparazione release per Windows: metadati TMDB, report MediaInfo,\n"
+                        L"screenshot, grafici bitrate e post BBCode da template.\n"
+                        L"Torrent BitTorrent v1, v2 e hybrid (predefinito). Motore C++23.\n\n"
+                        L"Licenza MIT. Template e regole del titolo derivati da makerelease\n"
+                        L"di Rick Sanchez & Norman; crediti in THIRD-PARTY-NOTICES.txt.\n\n"
+                        L"Impostazioni: ") + SettingsPath() + L"\nConfigurazione: " + ConfigDir();
             MessageBoxW(g.hwnd, about.c_str(), L"Informazioni", MB_ICONINFORMATION);
             break;
         }

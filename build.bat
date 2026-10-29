@@ -16,13 +16,15 @@ if not defined VSDIR (
 )
 set "CMAKE=%VSDIR%\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
 if not exist "%CMAKE%" set "CMAKE=cmake"
+set "CTEST=%VSDIR%\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\ctest.exe"
+if not exist "%CTEST%" set "CTEST=ctest"
 echo Visual Studio: %VSDIR%
 
 "%CMAKE%" -S . -B build -A x64
 if errorlevel 1 goto :error
 "%CMAKE%" --build build --config Release --parallel
 if errorlevel 1 goto :error
-build\Release\core_tests.exe
+"%CMAKE%" -E chdir build "%CTEST%" -C Release --output-on-failure
 if errorlevel 1 (
   echo ERRORE: test del core falliti.
   goto :error
